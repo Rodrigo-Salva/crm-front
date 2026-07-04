@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Card, PageHeader, Button, Loading } from '@/modules/shared';
+import { Card, PageHeader, Button, Loading, DatePicker } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
 import {
   ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
   Tooltip, Legend, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 
-const COLORS = ['#2196f3', '#4caf50', '#ff9800', '#f44336', '#9c27b0', '#00bcd4', '#ff5722', '#607d8b'];
+const COLORS = ['#0070F3', '#7928CA', '#FF0080', '#00DFD8', '#F5A623', '#10B981', '#3291FF', '#E2E8F0'];
 
 const today = () => new Date().toISOString().split('T')[0];
 const thirtyDaysAgo = () => {
@@ -58,8 +58,7 @@ export default function ReportsPage() {
   if (loading) return <Loading />;
 
   const kpis = [
-    { label: 'Total Contactos', value: summary?.totalContacts ?? 0 },
-    { label: 'Total Negocios', value: summary?.totalDeals ?? 0 },
+    { label: 'Total Leads', value: summary?.totalDeals ?? 0 },
     { label: 'Total Empresas', value: summary?.totalCompanies ?? 0 },
     { label: 'Total Actividades', value: summary?.totalActivities ?? 0 },
   ];
@@ -72,20 +71,18 @@ export default function ReportsPage() {
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Desde</label>
-            <input
-              type="date"
+            <DatePicker
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
-              className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--celeste-400)]"
+              onChange={(val) => setFrom(val)}
+              className="w-48"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Hasta</label>
-            <input
-              type="date"
+            <DatePicker
               value={to}
-              onChange={(e) => setTo(e.target.value)}
-              className="border border-[var(--border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--celeste-400)]"
+              onChange={(val) => setTo(val)}
+              className="w-48"
             />
           </div>
           <div className="flex gap-2 ml-auto">
@@ -117,13 +114,16 @@ export default function ReportsPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={dealsByStage} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
+                  <Pie data={dealsByStage} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} stroke="none" label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
                     {dealsByStage.map((_: any, i: number) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0A0A0A', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -137,12 +137,20 @@ export default function ReportsPage() {
           ) : (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activityBySeller}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#2196f3" name="Actividades" />
+                <BarChart data={activityBySeller} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0A0A0A', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
+                    itemStyle={{ color: '#fff' }}
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                  />
+                  <Bar dataKey="count" fill="url(#colorBar)" name="Actividades" radius={[4, 4, 0, 0]}>
+                    {activityBySeller.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>

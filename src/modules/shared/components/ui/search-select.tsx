@@ -78,7 +78,7 @@ export function SearchSelect({
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">{label}</label>
       {!selectedName || query ? (
         <div className="relative">
           <input
@@ -87,7 +87,7 @@ export function SearchSelect({
             onChange={(e) => handleInputChange(e.target.value)}
             onFocus={() => setOpen(true)}
             placeholder={value ? selectedName || placeholder : placeholder}
-            className="block w-full rounded-lg border border-[var(--border)] pl-9 pr-3 py-2.5 text-sm shadow-sm transition-all placeholder:text-gray-400 hover:border-[var(--celeste-400)] focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+            className="block w-full rounded-lg border border-[var(--border)] bg-transparent text-[var(--text)] pl-9 pr-3 py-2.5 text-sm shadow-sm transition-all placeholder:text-gray-400 hover:border-[var(--celeste-400)] focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -96,7 +96,7 @@ export function SearchSelect({
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[var(--border)] bg-gray-50 text-sm">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--sidebar-bg)] text-sm">
           <span className="flex-1 font-medium text-[var(--text)]">{selectedName}</span>
           <button onClick={handleClear} className="p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-200">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,7 +107,7 @@ export function SearchSelect({
       )}
 
       {open && (results.length > 0 || loading) && (
-        <div className="absolute z-50 mt-1 w-full bg-white rounded-xl border border-[var(--border)] shadow-lg max-h-60 overflow-y-auto animate-fade-in">
+        <div className="absolute z-50 w-full mt-1 bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg max-h-60 overflow-y-auto divide-y divide-[var(--border)]">
           {loading ? (
             <div className="p-3 text-sm text-[var(--text-muted)] text-center">Buscando...</div>
           ) : (
@@ -116,15 +116,10 @@ export function SearchSelect({
                 key={item.id}
                 type="button"
                 onClick={() => handleSelect(item)}
-                className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-[var(--sidebar-hover)] transition-colors border-b border-[var(--border)] last:border-0"
+                className="w-full text-left px-4 py-2 hover:bg-[var(--sidebar-hover)] transition-colors group"
               >
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[var(--celeste-400)] to-[var(--celeste-600)] text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-                  {displayLabel(item).charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--text)] truncate">{displayLabel(item)}</p>
-                  {displaySub(item) && <p className="text-xs text-[var(--text-muted)] truncate">{displaySub(item)}</p>}
-                </div>
+                <div className="font-medium text-[var(--text)] group-hover:text-[var(--primary)] transition-colors">{displayLabel(item)}</div>
+                {displaySub(item) && <div className="text-xs text-[var(--text-secondary)] mt-0.5">{displaySub(item)}</div>}
               </button>
             ))
           )}
@@ -133,3 +128,4 @@ export function SearchSelect({
     </div>
   );
 }
+

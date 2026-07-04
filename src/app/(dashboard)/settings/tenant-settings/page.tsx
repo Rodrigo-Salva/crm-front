@@ -53,7 +53,7 @@ export default function TenantSettingsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración"
         title="Configuración del tenant"
         description="Variables de configuración del sistema"
         actions={<Button onClick={handleAdd}>Agregar setting</Button>}
@@ -103,7 +103,7 @@ export default function TenantSettingsPage() {
                   </div>
                   <button
                     onClick={() => handleRemove(s.key)}
-                    className="p-2 mb-0.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    className="p-2 mb-0.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                     title="Eliminar"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,3 +125,5 @@ export default function TenantSettingsPage() {
     </div>
   );
 }
+
+

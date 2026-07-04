@@ -93,7 +93,7 @@ export default function CompaniesPage() {
     { key: 'industry', label: 'Industria', render: (c: Company) => <span className="text-[var(--text-secondary)]">{c.industry || '—'}</span> },
     { key: 'website', label: 'Sitio web', render: (c: Company) => c.website || '—' },
     { key: 'phone', label: 'Teléfono', render: (c: Company) => c.phone || '—' },
-    { key: '_count', label: 'Contactos', render: (c: any) => <span className="px-2 py-0.5 bg-gray-100 rounded-md text-sm">{c._count?.contacts ?? '—'}</span> },
+    { key: '_count', label: 'Leads', render: (c: any) => <span className="px-2 py-0.5 bg-gray-100 rounded-md text-sm">{c._count?.leads ?? '—'}</span> },
     { key: 'createdAt', label: 'Creado', render: (c: Company) => <span className="text-[var(--text-secondary)]">{new Date(c.createdAt).toLocaleDateString()}</span> },
     { key: 'actions', label: '', render: (c: Company) => (
       <div className="flex items-center gap-1">

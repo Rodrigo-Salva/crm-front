@@ -72,15 +72,25 @@ export default function ApiKeysPage() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="API Keys" description="Gestiona claves de acceso a la API" />
+        <PageHeader backHref="/settings" backLabel="Volver a Configuración" title="API Keys" description="Gestiona claves de acceso a la API" />
         <Button onClick={() => { setNewName(''); setModalOpen(true) }}>+ Crear API Key</Button>
       </div>
 
+      <Card>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Usa una API key para integrar sistemas externos con la API pública, enviándola en el header <code className="px-1 py-0.5 rounded bg-[var(--secondary)] text-xs">x-api-key</code>:
+        </p>
+        <ul className="mt-2 text-xs text-[var(--text-secondary)] space-y-1 font-mono">
+          <li>POST /public/v1/leads · GET /public/v1/leads/:id</li>
+          <li>POST /public/v1/tickets · GET /public/v1/tickets/:id</li>
+        </ul>
+      </Card>
+
       {fullKey && (
         <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
-          <p className="text-sm font-semibold text-amber-800 mb-1">🔑 Copia esta clave — no se mostrará again</p>
+          <p className="text-sm font-semibold text-amber-800 mb-1">ð Copia esta clave â no se mostrará again</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs bg-white px-3 py-2 rounded border border-amber-200 break-all">{fullKey}</code>
+            <code className="flex-1 text-xs bg-[var(--card-bg)] px-3 py-2 rounded border border-amber-200 break-all">{fullKey}</code>
             <Button size="sm" variant="outline" onClick={() => copyToClipboard(fullKey, 'new')}>
               {copiedId === 'new' ? 'Copiado' : 'Copiar'}
             </Button>
@@ -99,7 +109,7 @@ export default function ApiKeysPage() {
             <Card key={k.id}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className={`w-2 h-2 rounded-full ${k.active ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <div className={`w-2 h-2 rounded-full ${k.active ? 'bg-green-500/100' : 'bg-gray-300'}`} />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-[var(--text)]">{k.name}</p>
                     <code className="text-xs text-[var(--text-secondary)]">{maskKey(k.key)}</code>
@@ -109,7 +119,7 @@ export default function ApiKeysPage() {
                 <div className="flex items-center gap-2 shrink-0 ml-4">
                   <button
                     onClick={() => copyToClipboard(k.key, k.id)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--primary)] hover:bg-gray-100 transition-colors"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--primary)] hover:bg-[var(--sidebar-hover)] transition-colors"
                     title="Copiar clave"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
@@ -119,9 +129,9 @@ export default function ApiKeysPage() {
                     onClick={() => handleToggleActive(k)}
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${k.active ? 'bg-[var(--primary)]' : 'bg-gray-200'}`}
                   >
-                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${k.active ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                    <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-[var(--card-bg)] transition-transform ${k.active ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
                   </button>
-                  <button onClick={() => setDeleteConfirm(k.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                  <button onClick={() => setDeleteConfirm(k.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-colors">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   </button>
                 </div>
@@ -152,8 +162,10 @@ export default function ApiKeysPage() {
         onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
         onClose={() => setDeleteConfirm(null)}
         title="Eliminar API Key"
-        message="¿Estás seguro de eliminar esta clave? Los servicios que la usen dejarán de funcionar."
+        message="Â¿Estás seguro de eliminar esta clave? Los servicios que la usen dejarán de funcionar."
       />
     </div>
   );
 }
+
+

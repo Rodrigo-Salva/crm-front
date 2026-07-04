@@ -5,14 +5,13 @@ import { PageHeader, Card, Button, Loading } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
 
 const ENTITIES = [
-  { value: 'contacts', label: 'Contactos', accept: 'Contactos, Empresas' },
   { value: 'companies', label: 'Empresas', accept: 'Empresas' },
-  { value: 'deals', label: 'Negocios', accept: 'Negocios' },
+  { value: 'leads', label: 'Leads', accept: 'Leads' },
   { value: 'products', label: 'Productos', accept: 'Productos' },
 ];
 
 export default function ImportPage() {
-  const [entity, setEntity] = useState('contacts');
+  const [entity, setEntity] = useState('leads');
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -104,9 +103,8 @@ export default function ImportPage() {
       <Card>
         <h3 className="text-sm font-semibold text-[var(--text)] mb-3">Formato CSV esperado</h3>
         <div className="text-xs text-[var(--text-secondary)] space-y-1">
-          <p><strong>Contactos:</strong> name, email, phone, company, position</p>
           <p><strong>Empresas:</strong> name, industry, website, phone, address</p>
-          <p><strong>Negocios:</strong> title, value, stage, contactId</p>
+          <p><strong>Leads:</strong> name, email, phone, company, position, value, stage</p>
           <p><strong>Productos:</strong> name, price, description, category, sku</p>
         </div>
       </Card>

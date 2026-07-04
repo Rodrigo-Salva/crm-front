@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button } from './button';
 
@@ -14,7 +14,7 @@ export function BatchActionsBar({ count, onDelete, onClear, onEdit, loading }: B
   if (count === 0) return null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-[var(--border)] sticky top-0 z-10">
+    <div className="flex items-center justify-between px-4 py-3 bg-[var(--card-bg)] border-b border-[var(--border)] sticky top-0 z-10">
       <span className="text-sm font-medium text-[var(--text)]">
         {count} seleccionado{count !== 1 ? 's' : ''}
       </span>
@@ -28,3 +28,4 @@ export function BatchActionsBar({ count, onDelete, onClear, onEdit, loading }: B
     </div>
   );
 }
+

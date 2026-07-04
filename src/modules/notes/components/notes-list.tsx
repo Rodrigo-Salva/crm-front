@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/modules/shared';
@@ -31,7 +31,7 @@ export function NotesList({ relatedType, relatedId }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await notesApi.create({ content, relatedTo: { type: relatedType, id: relatedId } });
+      await notesApi.create({ content, relatedType, relatedId });
       setContent('');
       setShowForm(false);
       load();
@@ -59,7 +59,7 @@ export function NotesList({ relatedType, relatedId }: Props) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="bg-[var(--card-bg)] rounded-lg border border-gray-200 p-4 space-y-3">
           <textarea
             required
             placeholder="Escribe una nota..."
@@ -81,7 +81,7 @@ export function NotesList({ relatedType, relatedId }: Props) {
       ) : (
         <div className="space-y-3">
           {notes.map((note) => (
-            <div key={note.id} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div key={note.id} className="bg-[var(--card-bg)] rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-900 whitespace-pre-wrap">{note.content}</p>
@@ -108,3 +108,4 @@ export function NotesList({ relatedType, relatedId }: Props) {
     </div>
   );
 }
+

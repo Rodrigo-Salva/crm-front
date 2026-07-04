@@ -5,17 +5,16 @@ export interface Note {
   content: string;
   authorId: string;
   author?: { id: string; name: string; email: string };
-  relatedTo: { type: string; id: string };
+  relatedType: string;
+  relatedId: string;
   createdAt: string;
   updatedAt: string;
 }
 
 export const notesApi = {
-  list: (params: { type: string; id: string }) => {
-    const query = new URLSearchParams({ [params.type === 'contact' ? 'contactId' : 'dealId']: params.id });
-    return api.get<Note[]>(`/notes?${query}`);
-  },
-  create: (data: { content: string; relatedTo: { type: string; id: string } }) =>
+  list: (params: { type: string; id: string }) =>
+    api.get<Note[]>(`/notes?relatedType=${params.type}&relatedId=${params.id}`),
+  create: (data: { content: string; relatedType: string; relatedId: string }) =>
     api.post<Note>('/notes', data),
   update: (id: string, data: { content: string }) =>
     api.patch<Note>(`/notes/${id}`, data),

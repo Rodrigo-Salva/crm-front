@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { PageHeader, Card, Badge, Loading } from '@/modules/shared';
@@ -17,7 +17,7 @@ const priorityConfig: Record<string, { label: string; variant: 'default' | 'prim
   low: { label: 'Baja', variant: 'default' },
   medium: { label: 'Media', variant: 'primary' },
   high: { label: 'Alta', variant: 'warning' },
-  critical: { label: 'Crítica', variant: 'danger' },
+  critical: { label: 'CrÃ­tica', variant: 'danger' },
 };
 
 interface Ticket {
@@ -26,7 +26,7 @@ interface Ticket {
   subject: string;
   status: string;
   priority: string;
-  contact?: { id: string; name: string; email: string };
+  lead?: { id: string; name: string; email: string };
 }
 
 export default function KanbanPage() {
@@ -99,7 +99,7 @@ export default function KanbanPage() {
                     <span className="w-3 h-3 rounded-full" style={{ backgroundColor: cfg.color }} />
                     <span className="font-semibold text-sm text-gray-700">{cfg.label}</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-500 bg-white px-2 py-0.5 rounded-full border">
+                  <span className="text-xs font-medium text-gray-500 bg-[var(--card-bg)] px-2 py-0.5 rounded-full border">
                     {items.length}
                   </span>
                 </div>
@@ -111,15 +111,15 @@ export default function KanbanPage() {
                         key={ticket.id}
                         draggable
                         onDragStart={() => handleDragStart(ticket.id)}
-                        className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
+                        className="bg-[var(--card-bg)] rounded-lg p-3 shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between gap-2 mb-1.5">
                           <span className="text-xs font-mono text-gray-400">#{ticket.number}</span>
                           <Badge variant={pcfg.variant}>{pcfg.label}</Badge>
                         </div>
                         <p className="text-sm font-medium text-gray-800 leading-snug">{ticket.subject}</p>
-                        {ticket.contact && (
-                          <p className="text-xs text-gray-400 mt-1.5 truncate">{ticket.contact.name}</p>
+                        {ticket.lead && (
+                          <p className="text-xs text-gray-400 mt-1.5 truncate">{ticket.lead.name}</p>
                         )}
                       </div>
                     );
@@ -138,3 +138,4 @@ export default function KanbanPage() {
     </div>
   );
 }
+

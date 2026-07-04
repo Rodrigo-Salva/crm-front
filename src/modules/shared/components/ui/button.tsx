@@ -9,18 +9,18 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-const variantClasses: Record<Variant, string> = {
-  primary: 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-sm',
-  secondary: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-[var(--border)]',
-  danger: 'bg-[var(--danger)] text-white hover:bg-red-600 shadow-sm',
-  ghost: 'bg-transparent text-gray-500 hover:bg-[var(--sidebar-hover)] hover:text-[var(--celeste-600)]',
-  outline: 'bg-white text-[var(--primary)] border border-[var(--primary)] hover:bg-[var(--primary-light)]',
+const variants = {
+  primary: 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-[0_0_15px_rgba(0,112,243,0.3)] active:scale-95',
+  secondary: 'bg-[var(--secondary)] text-[var(--text)] hover:bg-[var(--sidebar-hover)] border border-[var(--border)] shadow-sm active:scale-95',
+  danger: 'bg-[var(--danger)] text-white hover:bg-red-600 shadow-sm active:scale-95',
+  ghost: 'hover:bg-[var(--sidebar-hover)] text-[var(--text-secondary)] hover:text-[var(--text)] active:scale-95',
+  outline: 'bg-transparent text-[var(--primary)] border border-[var(--primary)] hover:bg-[var(--primary-light)] active:scale-95',
 };
 
-const sizeClasses: Record<Size, string> = {
-  sm: 'px-3 py-1.5 text-xs font-medium',
-  md: 'px-4 py-2 text-sm font-medium',
-  lg: 'px-5 py-2.5 text-sm font-medium',
+const sizes = {
+  sm: 'px-3 py-1.5 text-xs rounded-md',
+  md: 'px-4 py-2 text-sm rounded-lg',
+  lg: 'px-6 py-3 text-base rounded-xl',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -29,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center rounded-lg font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${variantClasses[variant]} ${sizeClasses[size]} ${className ?? ''}`}
+        className={`inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 focus:ring-offset-[var(--bg)] disabled:opacity-50 disabled:pointer-events-none ${variants[variant]} ${sizes[size]} ${className ?? ''}`}
         {...props}
       >
         {loading && (

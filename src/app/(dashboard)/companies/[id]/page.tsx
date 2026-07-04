@@ -13,8 +13,7 @@ import { AuditTimeline } from '@/modules/audit/components/audit-timeline';
 
 const tabOptions = [
   { id: 'info', label: 'Información' },
-  { id: 'contacts', label: 'Contactos' },
-  { id: 'deals', label: 'Negocios' },
+  { id: 'deals', label: 'Leads' },
   { id: 'activity', label: 'Actividad' },
   { id: 'notes', label: 'Notas' },
   { id: 'audit', label: 'Historial' },
@@ -28,7 +27,6 @@ export default function CompanyDetailPage() {
   const id = params.id as string;
 
   const [company, setCompany] = useState<Company | null>(null);
-  const [contacts, setContacts] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
   const [customFields, setCustomFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,11 +41,7 @@ export default function CompanyDetailPage() {
       const res = await api.get<Company>(`/companies/${id}`);
       setCompany(res);
 
-      const [contactRes, fieldsRes] = await Promise.all([
-        api.get<any>(`/contacts?companyId=${id}`),
-        api.get<any>('/custom-fields?entity=company'),
-      ]);
-      setContacts(Array.isArray(contactRes.data) ? contactRes.data : []);
+      const fieldsRes = await api.get<any>('/custom-fields?entity=company');
       setCustomFields(Array.isArray(fieldsRes.data) ? fieldsRes.data : []);
     } catch (err) {
       console.error(err);
@@ -80,7 +74,7 @@ export default function CompanyDetailPage() {
 
   const loadDeals = useCallback(async () => {
     try {
-      const res = await api.get<any>(`/deals?companyId=${id}`);
+      const res = await api.get<any>(`/leads?companyId=${id}`);
       setDeals(Array.isArray(res.data) ? res.data : []);
     } catch {
       setDeals([]);
@@ -99,24 +93,14 @@ export default function CompanyDetailPage() {
     </div>
   );
 
-  const contactColumns = [
-    { key: 'name', label: 'Nombre', render: (c: any) => (
-      <Link href={`/contacts/${c.id}`} className="hover:text-[var(--primary)] transition-colors">
-        <span className="font-medium">{c.name}</span>
-      </Link>
-    )},
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Teléfono' },
-  ];
-
   const dealColumns = [
-    { key: 'name', label: 'Nombre', render: (d: any) => (
-      <Link href={`/deals/${d.id}`} className="hover:text-[var(--primary)] transition-colors">
-        <span className="font-medium">{d.name}</span>
+    { key: 'name', label: 'Nombre', render: (l: any) => (
+      <Link href={`/leads/${l.id}`} className="hover:text-[var(--primary)] transition-colors">
+        <span className="font-medium">{l.name}</span>
       </Link>
     )},
-    { key: 'stage', label: 'Etapa' },
-    { key: 'amount', label: 'Monto', render: (d: any) => d.amount ? `$${Number(d.amount).toLocaleString()}` : '—' },
+    { key: 'status', label: 'Etapa' },
+    { key: 'value', label: 'Valor', render: (l: any) => l.value ? `$${Number(l.value).toLocaleString()}` : '—' },
   ];
 
   return (
@@ -171,8 +155,8 @@ export default function CompanyDetailPage() {
                 <p className="mt-1 text-sm font-medium text-[var(--text)]">{company.address || '—'}</p>
               </div>
               <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Contactos</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{contacts.length} contactos</p>
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Leads</p>
+                <p className="mt-1 text-sm font-medium text-[var(--text)]">{company.leads?.length ?? 0} leads</p>
               </div>
               <div className="p-4 rounded-xl bg-[var(--bg)]">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Creado</p>
@@ -191,20 +175,9 @@ export default function CompanyDetailPage() {
             </div>
           )}
 
-          {activeTab === 'contacts' && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Contactos ({contacts.length})</h3>
-              {contacts.length === 0 ? (
-                <p className="text-gray-400 text-sm py-4 text-center">Sin contactos relacionados</p>
-              ) : (
-                <Table columns={contactColumns} data={contacts} />
-              )}
-            </div>
-          )}
-
           {activeTab === 'deals' && (
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Negocios ({deals.length})</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Leads ({deals.length})</h3>
               {deals.length === 0 ? (
                 <p className="text-gray-400 text-sm py-4 text-center">Sin negocios relacionados</p>
               ) : (

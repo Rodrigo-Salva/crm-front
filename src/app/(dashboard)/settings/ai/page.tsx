@@ -5,8 +5,7 @@ import { PageHeader, Card, Button, Input, Loading } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
 
 const ENTITY_TYPES = [
-  { value: 'contact', label: 'Contacto' },
-  { value: 'deal', label: 'Negocio' },
+  { value: 'lead', label: 'Lead' },
   { value: 'ticket', label: 'Ticket' },
 ];
 
@@ -15,7 +14,7 @@ export default function AiSettingsPage() {
   const [summary, setSummary] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
 
-  const [entity, setEntity] = useState('contact');
+  const [entity, setEntity] = useState('lead');
   const [entityId, setEntityId] = useState('');
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const [fetchingSuggestions, setFetchingSuggestions] = useState(false);
@@ -42,7 +41,7 @@ export default function AiSettingsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader title="AI Assistant" description="Herramientas de inteligencia artificial" />
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración" title="AI Assistant" description="Herramientas de inteligencia artificial" />
 
       <Card>
         <h2 className="text-base font-semibold text-[var(--text)] mb-4">Resumir texto</h2>
@@ -117,3 +116,5 @@ export default function AiSettingsPage() {
     </div>
   );
 }
+
+

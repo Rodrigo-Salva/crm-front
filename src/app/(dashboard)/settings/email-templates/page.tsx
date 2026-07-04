@@ -54,7 +54,7 @@ export default function EmailTemplatesPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Plantillas email" description="Gestiona plantillas de correo electrónico" />
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración" title="Plantillas email" description="Gestiona plantillas de correo electrónico" />
 
       <div className="flex items-center justify-between mb-6">
         <p className="text-sm text-[var(--text-secondary)]">{templates.length} plantilla(s)</p>
@@ -95,7 +95,7 @@ export default function EmailTemplatesPage() {
       <ConfirmDialog
         open={!!deleteId}
         title="Eliminar plantilla"
-        message="¿Estás seguro de eliminar esta plantilla de email?"
+        message="Â¿Estás seguro de eliminar esta plantilla de email?"
         onConfirm={handleDelete}
         onClose={() => setDeleteId(null)}
       />
@@ -135,7 +135,7 @@ function TemplateModal({
     <Modal open={open} onClose={onClose} title={template ? 'Editar plantilla' : 'Nueva plantilla de email'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input label="Nombre" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Ej: Bienvenida" />
-        <Input label="Asunto" value={subject} onChange={(e) => setSubject(e.target.value)} required placeholder="Ej: ¡Bienvenido a CRM Pro!" />
+        <Input label="Asunto" value={subject} onChange={(e) => setSubject(e.target.value)} required placeholder="Ej: Â¡Bienvenido a CRM Pro!" />
         <div>
           <label className="block text-sm font-medium text-[var(--text)] mb-1">Cuerpo</label>
           <textarea
@@ -149,9 +149,11 @@ function TemplateModal({
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Guardandoâ¦' : 'Guardar'}</Button>
         </div>
       </form>
     </Modal>
   );
 }
+
+

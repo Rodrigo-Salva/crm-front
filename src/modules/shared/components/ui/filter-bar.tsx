@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Button } from './button';
@@ -41,7 +41,7 @@ export function FilterBar({ fields, values, onChange, onClear }: FilterBarProps)
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           Filtros
-          {hasFilters && <span className="w-2 h-2 rounded-full bg-white" />}
+          {hasFilters && <span className="w-2 h-2 rounded-full bg-[var(--card-bg)]" />}
         </button>
         {hasFilters && (
           <button onClick={onClear} className="text-xs text-[var(--text-muted)] hover:text-[var(--danger)] transition-colors">
@@ -51,7 +51,7 @@ export function FilterBar({ fields, values, onChange, onClear }: FilterBarProps)
       </div>
 
       {open && (
-        <div className="flex flex-wrap gap-3 p-4 bg-white rounded-lg border border-[var(--border)]">
+        <div className="flex flex-wrap gap-3 p-4 bg-[var(--card-bg)] rounded-lg border border-[var(--border)]">
           {fields.map((field) => (
             <div key={field.key} className="min-w-[160px]">
               <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">{field.label}</label>
@@ -89,3 +89,4 @@ export function FilterBar({ fields, values, onChange, onClear }: FilterBarProps)
     </div>
   );
 }
+

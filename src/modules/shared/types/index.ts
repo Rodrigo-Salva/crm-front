@@ -11,21 +11,6 @@ export interface User {
   updatedAt: string;
 }
 
-export interface Contact {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  companyName?: string;
-  position?: string;
-  status: ContactStatus;
-  companyId?: string;
-  ownerId: string;
-  customFields?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export enum ContactStatus {
   NEW = 'new',
   CONTACTED = 'contacted',
@@ -34,30 +19,6 @@ export enum ContactStatus {
 }
 
 export type Currency = 'MXN' | 'USD' | 'EUR' | 'CAD' | 'GBP' | 'ARS' | 'CLP' | 'COP' | 'PEN' | 'BRL';
-
-export interface Deal {
-  id: string;
-  title: string;
-  value: number;
-  currency: Currency;
-  stage: DealStage;
-  contactId: string;
-  contact?: { id: string; name: string; email: string };
-  ownerId: string;
-  customFields?: Record<string, any>;
-  expectedCloseDate?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export enum DealStage {
-  LEAD = 'lead',
-  QUALIFIED = 'qualified',
-  PROPOSAL = 'proposal',
-  NEGOTIATION = 'negotiation',
-  CLOSED_WON = 'closed_won',
-  CLOSED_LOST = 'closed_lost',
-}
 
 export interface Task {
   id: string;
@@ -93,7 +54,8 @@ export interface Company {
   address?: string;
   ownerId: string;
   customFields?: Record<string, any>;
-  _count?: { contacts: number };
+  _count?: { leads: number };
+  leads?: { id: string; name: string; email?: string; status?: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -139,13 +101,13 @@ export interface Campaign {
 export interface CampaignRecipient {
   id: string;
   campaignId: string;
-  contactId: string;
+  leadId: string;
   email: string;
   sent: boolean;
   opened: boolean;
   openedAt?: string;
   error?: string;
-  contact?: { id: string; name: string; email: string };
+  lead?: { id: string; name: string; email: string };
 }
 
 export interface Product {
@@ -163,8 +125,7 @@ export interface Product {
 export interface Quote {
   id: string;
   number: string;
-  dealId?: string;
-  contactId?: string;
+  leadId?: string;
   status: 'draft' | 'sent' | 'approved' | 'rejected' | 'converted';
   currency: Currency;
   subtotal: number;
@@ -174,8 +135,7 @@ export interface Quote {
   notes?: string;
   version: number;
   discountPercent?: number;
-  contact?: { id: string; name: string; email: string };
-  deal?: { id: string; title: string };
+  lead?: { id: string; name: string; email?: string; companyName?: string };
   items: QuoteLineItem[];
   approvalRequest?: { id: string; status: string };
   createdAt: string;
@@ -193,6 +153,88 @@ export interface QuoteLineItem {
   total: number;
 }
 
+export interface Invoice {
+  id: string;
+  number: string;
+  subscriptionId: string;
+  status: 'pending' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  currency: Currency;
+  amount: number;
+  dueDate: string;
+  sentAt?: string;
+  paidAt?: string;
+  createdAt: string;
+}
+
+export interface Subscription {
+  id: string;
+  contractId: string;
+  billingInterval: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  amount: number;
+  currency: Currency;
+  status: 'active' | 'paused' | 'cancelled' | 'expired';
+  startDate: string;
+  nextBillingDate: string;
+  lastBilledAt?: string;
+  cancelledAt?: string;
+  invoices?: Invoice[];
+}
+
+export interface Contract {
+  id: string;
+  number: string;
+  quoteId: string;
+  leadId: string;
+  status: 'draft' | 'sent' | 'accepted' | 'active' | 'cancelled' | 'expired';
+  content: string;
+  documentHash?: string;
+  acceptedByUserId?: string;
+  acceptedIp?: string;
+  acceptedAt?: string;
+  sentAt?: string;
+  lead?: { id: string; name: string; email?: string; companyName?: string };
+  quote?: { id: string; number: string; grandTotal: number; currency: Currency };
+  subscription?: Subscription;
+  createdAt: string;
+}
+
+export interface PlaybookStep {
+  id: string;
+  playbookId: string;
+  title: string;
+  description?: string;
+  dayOffset: number;
+  order: number;
+}
+
+export interface Playbook {
+  id: string;
+  name: string;
+  trigger: 'contract_accepted' | 'renewal_upcoming';
+  active: boolean;
+  steps: PlaybookStep[];
+  createdAt: string;
+}
+
+export interface PlaybookRunTask {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  dueDate?: string;
+}
+
+export interface PlaybookRun {
+  id: string;
+  playbookId: string;
+  leadId: string;
+  contractId?: string;
+  status: 'active' | 'completed' | 'cancelled';
+  startedAt: string;
+  playbook: { id: string; name: string; trigger: string };
+  tasks: PlaybookRunTask[];
+}
+
 export interface Ticket {
   id: string;
   number: number;
@@ -200,11 +242,11 @@ export interface Ticket {
   description?: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'critical';
-  contactId?: string;
+  leadId?: string;
   assignedTo?: string;
   slaDeadline?: string;
   customFields?: Record<string, any>;
-  contact?: { id: string; name: string; email: string };
+  lead?: { id: string; name: string; email: string };
   assignee?: { id: string; name: string };
   messages?: TicketMessage[];
   _count?: { messages: number };
@@ -230,12 +272,46 @@ export interface Lead {
   source: string;
   status: string;
   score: number;
+  healthScore?: number | null;
+  healthStatus?: 'healthy' | 'at_risk' | 'critical' | 'unknown';
   notes?: string;
+  value: number;
+  currency: Currency;
+  expectedCloseDate?: string;
+  customFields?: Record<string, any>;
+  companyId?: string;
+  companyName?: string;
+  position?: string;
+  customerStatus?: ContactStatus;
+  account?: { id: string; name: string };
+  campaignId?: string;
+  campaign?: { id: string; name: string; channel?: string };
+  careerId?: string;
+  career?: { id: string; name: string };
+  modalityId?: string;
+  modality?: { id: string; name: string };
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  utmTerm?: string;
+  utmContent?: string;
   ownerId: string;
   tenantId: string;
-  convertedContactId?: string;
-  convertedDealId?: string;
   owner?: { id: string; name: string };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  channel?: string;
+  budget?: number;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { leads: number };
 }

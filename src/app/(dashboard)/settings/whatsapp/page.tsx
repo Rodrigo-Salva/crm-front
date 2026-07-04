@@ -78,14 +78,14 @@ export default function WhatsAppPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración"
         title="WhatsApp"
         description={configured ? 'Configuración activa' : 'No configurado'}
       />
 
       {message && (
         <div className={`p-3 rounded-lg text-sm border ${
-          message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+          message.type === 'success' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
         }`}>
           {message.text}
         </div>
@@ -106,7 +106,7 @@ export default function WhatsAppPage() {
             type="password"
             value={form.accessToken}
             onChange={(e) => setForm({ ...form, accessToken: e.target.value })}
-            placeholder={configured ? '••••••••' : 'Token de acceso permanente'}
+            placeholder={configured ? 'â¢â¢â¢â¢â¢â¢â¢â¢' : 'Token de acceso permanente'}
           />
           <Input
             label="Business ID"
@@ -123,7 +123,7 @@ export default function WhatsAppPage() {
         <h2 className="text-lg font-semibold text-[var(--text)] mb-4">Enviar mensaje de prueba</h2>
         {testMessage && (
           <div className={`mb-4 p-3 rounded-lg text-sm border ${
-            testMessage.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+            testMessage.type === 'success' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
           }`}>
             {testMessage.text}
           </div>
@@ -137,14 +137,14 @@ export default function WhatsAppPage() {
             required
           />
           <div>
-            <label htmlFor="templateName" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="templateName" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
               Plantilla
             </label>
             <select
               id="templateName"
               value={test.templateName}
               onChange={(e) => setTest({ ...test, templateName: e.target.value })}
-              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] hover:border-[var(--celeste-400)]"
+              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] hover:border-[var(--celeste-400)]"
             >
               {TEMPLATE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -157,3 +157,5 @@ export default function WhatsAppPage() {
     </div>
   );
 }
+
+

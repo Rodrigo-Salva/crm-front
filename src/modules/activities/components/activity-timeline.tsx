@@ -1,54 +1,60 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/modules/shared';
 import { activityApi, Activity } from '../services/activity-api';
 
 const typeIcons: Record<string, string> = {
-  call: '📞',
-  meeting: '🤝',
-  email: '📧',
-  note: '📝',
-  task: '✅',
+  call: 'ðŸ“ž',
+  meeting: 'ðŸ¤',
+  email: 'ðŸ“§',
+  note: 'ðŸ“',
+  task: 'âœ…',
 };
 
 const typeLabels: Record<string, string> = {
   call: 'Llamada',
-  meeting: 'Reunión',
+  meeting: 'ReuniÃ³n',
   email: 'Email',
   note: 'Nota',
   task: 'Tarea',
 };
 
 interface Props {
-  contactId?: string;
-  dealId?: string;
+  leadId?: string;
 }
 
-export function ActivityTimeline({ contactId, dealId }: Props) {
+export function ActivityTimeline({ leadId }: Props) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'note', subject: '', description: '' });
+  const [form, setForm] = useState({ type: 'note', subject: '', description: '', dueDate: '', reminderMinutesBefore: '' });
 
   const load = useCallback(async () => {
     try {
-      const res = await activityApi.list({ contactId, dealId });
+      const res = await activityApi.list({ leadId });
       setActivities(Array.isArray(res) ? res : []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [contactId, dealId]);
+  }, [leadId]);
 
   useEffect(() => { load() }, [load]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await activityApi.create({ ...form, contactId, dealId });
-      setForm({ type: 'note', subject: '', description: '' });
+      await activityApi.create({
+        type: form.type,
+        subject: form.subject,
+        description: form.description,
+        leadId,
+        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+        reminderMinutesBefore: form.dueDate && form.reminderMinutesBefore ? Number(form.reminderMinutesBefore) : undefined,
+      });
+      setForm({ type: 'note', subject: '', description: '', dueDate: '', reminderMinutesBefore: '' });
       setShowForm(false);
       load();
     } catch (err) {
@@ -75,7 +81,7 @@ export function ActivityTimeline({ contactId, dealId }: Props) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+        <form onSubmit={handleSubmit} className="bg-[var(--card-bg)] rounded-lg border border-gray-200 p-4 space-y-3">
           <select
             value={form.type}
             onChange={(e) => setForm({ ...form, type: e.target.value })}
@@ -83,7 +89,7 @@ export function ActivityTimeline({ contactId, dealId }: Props) {
           >
             <option value="note">Nota</option>
             <option value="call">Llamada</option>
-            <option value="meeting">Reunión</option>
+            <option value="meeting">ReuniÃ³n</option>
             <option value="email">Email</option>
             <option value="task">Tarea</option>
           </select>
@@ -95,12 +101,30 @@ export function ActivityTimeline({ contactId, dealId }: Props) {
             className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
           />
           <textarea
-            placeholder="Descripción (opcional)"
+            placeholder="DescripciÃ³n (opcional)"
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             rows={3}
           />
+          <input
+            type="datetime-local"
+            value={form.dueDate}
+            onChange={(e) => setForm({ ...form, dueDate: e.target.value, reminderMinutesBefore: e.target.value ? form.reminderMinutesBefore : '' })}
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
+          <select
+            value={form.reminderMinutesBefore}
+            onChange={(e) => setForm({ ...form, reminderMinutesBefore: e.target.value })}
+            disabled={!form.dueDate}
+            className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100 disabled:text-gray-400"
+          >
+            <option value="">Sin recordatorio</option>
+            <option value="15">Recordarme 15 minutos antes</option>
+            <option value="30">Recordarme 30 minutos antes</option>
+            <option value="60">Recordarme 1 hora antes</option>
+            <option value="1440">Recordarme 1 dia antes</option>
+          </select>
           <Button type="submit" size="sm">Guardar</Button>
         </form>
       )}
@@ -112,14 +136,14 @@ export function ActivityTimeline({ contactId, dealId }: Props) {
       ) : (
         <div className="space-y-3">
           {activities.map((a) => (
-            <div key={a.id} className="flex gap-3 bg-white rounded-lg border border-gray-200 p-4">
+            <div key={a.id} className="flex gap-3 bg-[var(--card-bg)] rounded-lg border border-gray-200 p-4">
               <div className="text-xl">{typeIcons[a.type]}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-400 uppercase">{typeLabels[a.type]}</span>
                   {a.type === 'task' && (
                     <button onClick={() => toggleDone(a)} className="text-xs">
-                      {a.done ? '✅' : '⬜'}
+                      {a.done ? 'âœ…' : 'â¬œ'}
                     </button>
                   )}
                 </div>
@@ -136,3 +160,4 @@ export function ActivityTimeline({ contactId, dealId }: Props) {
     </div>
   );
 }
+

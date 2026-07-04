@@ -6,6 +6,8 @@ import { Button, Table, PageHeader, Loading, Card, Badge, Modal, ConfirmDialog, 
 import { FilterBar } from '@/modules/shared/components/ui/filter-bar';
 import { api } from '@/modules/shared/services/api';
 import { Task, TaskStatus, TaskPriority } from '@/modules/shared/types';
+import { BatchActionsBar } from '@/modules/shared/components/ui/batch-actions';
+import { useSelection } from '@/modules/shared/hooks/use-selection';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
   pending: { label: 'Pendiente', variant: 'warning' },
@@ -33,6 +35,11 @@ export default function TasksPage() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState<string | null>(null);
+  const sel = useSelection<Task>();
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [batchStatus, setBatchStatus] = useState('');
+  const [batchSaving, setBatchSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,6 +71,25 @@ export default function TasksPage() {
       if (editId) { await api.patch(`/tasks/${editId}`, form); } else { await api.post('/tasks', form); }
       setModalOpen(false); load();
     } catch (err) { console.error(err); } finally { setSaving(false); }
+  };
+
+  const handleBatchDelete = async () => {
+    setBatchLoading(true);
+    try {
+      await Promise.all(Array.from(sel.selected).map((id) => api.delete(`/tasks/${id}`)));
+      sel.clear();
+      load();
+    } catch {} finally { setBatchLoading(false); }
+  };
+
+  const handleBatchEdit = async () => {
+    setBatchSaving(true);
+    try {
+      await Promise.all(Array.from(sel.selected).map((id) => api.patch(`/tasks/${id}`, { status: batchStatus })));
+      sel.clear();
+      setBatchEditOpen(false);
+      load();
+    } catch {} finally { setBatchSaving(false); }
   };
 
   const columns = [
@@ -115,7 +141,10 @@ export default function TasksPage() {
             />
           </div>
         </div>
-        {loading ? <Loading /> : <Table columns={columns} data={data} />}
+        {sel.selected.size > 0 && (
+          <BatchActionsBar count={sel.selected.size} onDelete={handleBatchDelete} onClear={sel.clear} onEdit={() => { setBatchStatus(''); setBatchEditOpen(true); }} loading={batchLoading} />
+        )}
+        {loading ? <Loading /> : <Table columns={columns} data={data} selected={sel.selected} onToggle={sel.toggle} onToggleAll={() => sel.toggleAll(data)} allSelected={sel.allSelected(data)} />}
       </Card>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editId ? 'Editar Tarea' : 'Nueva Tarea'}>
@@ -148,6 +177,24 @@ export default function TasksPage() {
       </Modal>
 
       <ConfirmDialog open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} loading={saving} title="Eliminar Tarea" message="¿Estás seguro? Esta acción no se puede deshacer." />
+
+      <Modal open={batchEditOpen} onClose={() => setBatchEditOpen(false)} title={`Editar ${sel.selected.size} tareas`}>
+        <form onSubmit={(e) => { e.preventDefault(); handleBatchEdit(); }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cambiar estado a</label>
+            <select value={batchStatus} onChange={(e) => setBatchStatus(e.target.value)} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)]">
+              <option value="">Seleccionar...</option>
+              <option value="pending">Pendiente</option>
+              <option value="in_progress">En progreso</option>
+              <option value="completed">Completada</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setBatchEditOpen(false)}>Cancelar</Button>
+            <Button type="submit" loading={batchSaving} disabled={!batchStatus}>Actualizar {sel.selected.size} tareas</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

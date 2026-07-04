@@ -21,25 +21,25 @@ export function Table<T extends Record<string, any>>({ columns, data, onRowClick
   const selectable = !!onToggle;
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--border)] overflow-hidden animate-fade-in">
-      <div className="overflow-x-auto">
+    <div className="bg-[var(--card-bg)] rounded-xl w-full border border-[var(--border)] overflow-hidden animate-fade-in shadow-[0_4px_24px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-200">
+      <div className="overflow-x-auto w-full">
         <table className="min-w-full divide-y divide-[var(--border)]">
           <thead>
             <tr>
               {selectable && (
-                <th className="px-4 py-3 text-left bg-[var(--bg)] w-10">
+                <th className="px-4 py-3 text-left bg-[var(--sidebar-bg)] border-b border-[var(--border)] w-10">
                   <input
                     type="checkbox"
                     checked={allSelected}
                     onChange={() => onToggleAll?.()}
-                    className="w-4 h-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                    className="w-4 h-4 rounded border-[var(--border)] bg-[var(--input)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
                   />
                 </th>
               )}
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-5 py-3 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--bg)] ${col.className ?? ''}`}
+                  className={`px-5 py-3 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider bg-[var(--sidebar-bg)] border-b border-[var(--border)] ${col.className ?? ''}`}
                 >
                   {col.label}
                 </th>
@@ -62,7 +62,7 @@ export function Table<T extends Record<string, any>>({ columns, data, onRowClick
                         type="checkbox"
                         checked={checked}
                         onChange={() => onToggle(id)}
-                        className="w-4 h-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
+                        className="w-4 h-4 rounded border-[var(--border)] bg-[var(--input)] text-[var(--primary)] focus:ring-[var(--primary)] cursor-pointer"
                       />
                     </td>
                   )}
@@ -78,7 +78,7 @@ export function Table<T extends Record<string, any>>({ columns, data, onRowClick
               <tr>
                 <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-5 py-12 text-center text-sm text-[var(--text-muted)]">
                   <div className="flex flex-col items-center gap-2">
-                    <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-8 h-8 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     <span>No se encontraron registros</span>

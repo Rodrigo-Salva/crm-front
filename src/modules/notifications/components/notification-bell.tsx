@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
+import { toast } from 'sonner';
 import { notificationApi } from '../services/notification-api';
 
 export function NotificationBell() {
@@ -16,7 +18,26 @@ export function NotificationBell() {
   }, []);
 
   useEffect(() => { load() }, [load]);
-  useEffect(() => { const iv = setInterval(load, 15000); return () => clearInterval(iv) }, [load]);
+  useEffect(() => { const iv = setInterval(load, 60000); return () => clearInterval(iv) }, [load]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return;
+    let userId: string | undefined;
+    try { userId = JSON.parse(storedUser).id; } catch { return; }
+    if (!userId) return;
+
+    const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+    const socket = io(socketUrl);
+
+    socket.on('connect', () => socket.emit('joinUser', { userId }));
+    socket.on('notification:new', (notification: { title: string }) => {
+      setCount((c) => c + 1);
+      toast.info(notification.title);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
 
   return (
     <button className="relative p-2 rounded-lg text-gray-400 hover:text-[var(--celeste-600)] hover:bg-[var(--sidebar-hover)] transition-colors" onClick={() => router.push('/notifications')}>

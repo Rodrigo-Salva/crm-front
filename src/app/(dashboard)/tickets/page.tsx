@@ -23,7 +23,7 @@ const priorityConfig: Record<string, { label: string; variant: 'default' | 'prim
   critical: { label: 'Crítica', variant: 'danger' },
 };
 
-const emptyForm = { subject: '', description: '', status: 'open' as const, priority: 'medium' as const, contactId: '' };
+const emptyForm = { subject: '', description: '', status: 'open' as const, priority: 'medium' as const, leadId: '' };
 
 export default function TicketsPage() {
   const router = useRouter();
@@ -60,7 +60,7 @@ export default function TicketsPage() {
   useEffect(() => { load() }, [load]);
 
   const openCreate = () => { setEditId(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (item: Ticket) => { setEditId(item.id); setForm({ subject: item.subject, description: item.description || '', status: item.status as any, priority: item.priority as any, contactId: item.contactId || '' }); setModalOpen(true); };
+  const openEdit = (item: Ticket) => { setEditId(item.id); setForm({ subject: item.subject, description: item.description || '', status: item.status as any, priority: item.priority as any, leadId: item.leadId || '' }); setModalOpen(true); };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -101,7 +101,7 @@ export default function TicketsPage() {
     { key: 'subject', label: 'Asunto', render: (t: Ticket) => (
       <button onClick={() => router.push(`/tickets/${t.id}`)} className="text-left hover:text-[var(--primary)] transition-colors">
         <span className="font-medium">{t.subject}</span>
-        {t.contact && <p className="text-xs text-[var(--text-secondary)]">{t.contact.name}</p>}
+        {t.lead && <p className="text-xs text-[var(--text-secondary)]">{t.lead.name}</p>}
       </button>
     )},
     { key: 'priority', label: 'Prioridad', render: (t: Ticket) => { const cfg = priorityConfig[t.priority] || { label: t.priority, variant: 'default' as const }; return <Badge variant={cfg.variant}>{cfg.label}</Badge>; }},
@@ -173,7 +173,7 @@ export default function TicketsPage() {
                 <option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option><option value="critical">Crítica</option>
               </select>
             </div>
-            <SearchSelect label="Contacto" value={form.contactId} onChange={(id) => setForm({ ...form, contactId: id })} endpoint="/contacts" placeholder="Buscar contacto por nombre..." displaySub={(c) => c.email} />
+            <SearchSelect label="Lead" value={form.leadId} onChange={(id) => setForm({ ...form, leadId: id })} endpoint="/leads" displayLabel={(l) => l.name} displaySub={(l) => l.email || ''} placeholder="Buscar lead por nombre..." />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>

@@ -7,18 +7,16 @@ export interface Activity {
   description?: string;
   dueDate?: string;
   done: boolean;
-  contactId?: string;
-  dealId?: string;
+  leadId?: string;
   owner?: { id: string; name: string; email: string };
-  contact?: { id: string; name: string };
+  lead?: { id: string; name: string };
   createdAt: string;
 }
 
 export const activityApi = {
-  list: (params?: { contactId?: string; dealId?: string }) => {
+  list: (params?: { leadId?: string }) => {
     const query = new URLSearchParams();
-    if (params?.contactId) query.set('contactId', params.contactId);
-    if (params?.dealId) query.set('dealId', params.dealId);
+    if (params?.leadId) query.set('leadId', params.leadId);
     const qs = query.toString();
     return api.get<Activity[]>(`/activities${qs ? `?${qs}` : ''}`);
   },
@@ -27,9 +25,10 @@ export const activityApi = {
     subject: string;
     description?: string;
     dueDate?: string;
-    contactId?: string;
-    dealId?: string;
+    leadId?: string;
+    reminderMinutesBefore?: number;
   }) => api.post<Activity>('/activities', data),
-  update: (id: string, data: Partial<Activity>) => api.patch<Activity>(`/activities/${id}`, data),
+  update: (id: string, data: Partial<Activity> & { reminderMinutesBefore?: number | null }) =>
+    api.patch<Activity>(`/activities/${id}`, data),
   remove: (id: string) => api.delete(`/activities/${id}`),
 };

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, PageHeader, Card, Loading, EmptyState } from '@/modules/shared';
@@ -37,7 +37,7 @@ export default function NotificationsPage() {
         title="Notificaciones"
         actions={
           notifications.length > 0 && (
-            <Button size="sm" variant="ghost" onClick={markAll}>Marcar todo como leído</Button>
+            <Button size="sm" variant="ghost" onClick={markAll}>Marcar todo como leÃ­do</Button>
           )
         }
       />
@@ -64,7 +64,7 @@ export default function NotificationsPage() {
               onClick={() => markOne(n.id)}
               className={`rounded-lg border cursor-pointer transition-all duration-150 animate-fade-in ${
                 n.read
-                  ? 'bg-white border-[var(--border)]'
+                  ? 'bg-[var(--card-bg)] border-[var(--border)]'
                   : 'bg-blue-50/50 border-[var(--primary)]/30 shadow-sm'
               }`}
             >
@@ -88,3 +88,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+

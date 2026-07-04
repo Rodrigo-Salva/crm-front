@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, PageHeader, Card, Loading, Modal, Input } from '@/modules/shared';
@@ -70,7 +70,7 @@ export default function EmailInboxPage() {
           <div className="flex rounded-lg border border-[var(--border)] overflow-hidden">
             {(['all', 'inbound', 'outbound'] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-xs font-medium transition-colors ${filter === f ? 'bg-[var(--primary)] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${filter === f ? 'bg-[var(--primary)] text-white' : 'bg-[var(--card-bg)] text-gray-600 hover:bg-gray-50'}`}>
                 {f === 'all' ? 'Todos' : f === 'inbound' ? 'Recibidos' : 'Enviados'}
               </button>
             ))}
@@ -80,7 +80,7 @@ export default function EmailInboxPage() {
       </div>
 
       <div className="flex gap-0 h-[calc(100%-4rem)]">
-        <div className="w-96 shrink-0 border-r border-[var(--border)] overflow-y-auto bg-white rounded-l-xl">
+        <div className="w-96 shrink-0 border-r border-[var(--border)] overflow-y-auto bg-[var(--card-bg)] rounded-l-xl">
           {filtered.length === 0 ? (
             <div className="text-center py-20">
               <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,13 +105,13 @@ export default function EmailInboxPage() {
                 <span className={`text-[10px] uppercase font-bold px-1 py-0.5 rounded ${e.direction === 'inbound' ? 'bg-green-50 text-green-700' : 'bg-blue-50 text-blue-700'}`}>
                   {e.direction === 'inbound' ? 'Recibido' : 'Enviado'}
                 </span>
-                {e.openedAt && <span className="text-[10px] text-green-600">· Abierto</span>}
+                {e.openedAt && <span className="text-[10px] text-green-600">Â· Abierto</span>}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex-1 bg-white rounded-r-xl overflow-y-auto">
+        <div className="flex-1 bg-[var(--card-bg)] rounded-r-xl overflow-y-auto">
           {!selected ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
@@ -144,10 +144,10 @@ export default function EmailInboxPage() {
                   <span className="text-[var(--text-secondary)] w-20">Fecha:</span>
                   <span>{new Date(selected.sentAt).toLocaleString('es-MX')}</span>
                 </div>
-                {selected.contactId && (
+                {selected.leadId && (
                   <div className="flex items-center gap-2">
-                    <span className="text-[var(--text-secondary)] w-20">Contacto:</span>
-                    <span className="text-[var(--primary)]">{selected.contact?.name || selected.contactId}</span>
+                    <span className="text-[var(--text-secondary)] w-20">Lead:</span>
+                    <span className="text-[var(--primary)]">{selected.lead?.name || selected.leadId}</span>
                   </div>
                 )}
               </div>
@@ -174,3 +174,4 @@ export default function EmailInboxPage() {
     </div>
   );
 }
+

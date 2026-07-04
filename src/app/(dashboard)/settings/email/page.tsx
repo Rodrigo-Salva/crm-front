@@ -13,7 +13,7 @@ export default function EmailSettingsPage() {
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const [smtp, setSmtp] = useState({ host: '', port: 587, username: '', password: '', fromEmail: '', fromName: '' });
-  const [imap, setImap] = useState({ host: '', port: 993, username: '', password: '', useTls: true });
+  const [imap, setImap] = useState({ host: '', port: 993, username: '', password: '', useTLS: true });
 
   useEffect(() => {
     api.get('/email/config').then((res: any) => {
@@ -34,7 +34,7 @@ export default function EmailSettingsPage() {
           port: res.imap.port || 993,
           username: res.imap.username || '',
           password: '',
-          useTls: res.imap.useTls !== false,
+          useTLS: res.imap.useTLS !== false,
         });
       }
     }).catch(() => {}).finally(() => setLoading(false));
@@ -45,7 +45,7 @@ export default function EmailSettingsPage() {
     setSavingSmtp(true);
     setMessage(null);
     try {
-      await api.put('/email/config', { smtp });
+      await api.put('/email/config', smtp);
       setMessage({ text: 'Configuración SMTP guardada correctamente', type: 'success' });
       setConfigured(true);
     } catch {
@@ -86,14 +86,14 @@ export default function EmailSettingsPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
-      <PageHeader
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración"
         title="Configuración de Correo"
         description={configured ? 'Configuración activa' : 'No configurado'}
       />
 
       {message && (
         <div className={`p-3 rounded-lg text-sm border ${
-          message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+          message.type === 'success' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
         }`}>
           {message.text}
         </div>
@@ -129,7 +129,7 @@ export default function EmailSettingsPage() {
               type="password"
               value={smtp.password}
               onChange={(e) => setSmtp({ ...smtp, password: e.target.value })}
-              placeholder={configured ? '••••••••' : ''}
+              placeholder={configured ? 'â¢â¢â¢â¢â¢â¢â¢â¢' : ''}
             />
             <Input
               label="Correo remitente"
@@ -176,16 +176,16 @@ export default function EmailSettingsPage() {
               type="password"
               value={imap.password}
               onChange={(e) => setImap({ ...imap, password: e.target.value })}
-              placeholder={configured ? '••••••••' : ''}
+              placeholder={configured ? 'â¢â¢â¢â¢â¢â¢â¢â¢' : ''}
             />
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={imap.useTls}
-                onChange={(e) => setImap({ ...imap, useTls: e.target.checked })}
+                checked={imap.useTLS}
+                onChange={(e) => setImap({ ...imap, useTLS: e.target.checked })}
                 className="rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
               />
-              <span className="text-sm font-medium text-gray-700">Usar TLS</span>
+              <span className="text-sm font-medium text-[var(--text-secondary)]">Usar TLS</span>
             </label>
             <div className="flex gap-2">
               <Button type="submit" loading={savingImap}>Guardar IMAP</Button>
@@ -197,3 +197,5 @@ export default function EmailSettingsPage() {
     </div>
   );
 }
+
+

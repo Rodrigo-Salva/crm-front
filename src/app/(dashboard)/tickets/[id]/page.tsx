@@ -33,7 +33,7 @@ const tabOptions = [
   { id: 'files', label: 'Archivos' },
 ];
 
-const emptyForm = { subject: '', description: '', status: 'open' as const, priority: 'medium' as const, contactId: '' };
+const emptyForm = { subject: '', description: '', status: 'open' as const, priority: 'medium' as const, leadId: '' };
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -78,7 +78,7 @@ export default function TicketDetailPage() {
 
   const openEdit = () => {
     if (!ticket) return;
-    setForm({ subject: ticket.subject, description: ticket.description || '', status: ticket.status as any, priority: ticket.priority as any, contactId: ticket.contactId || '' });
+    setForm({ subject: ticket.subject, description: ticket.description || '', status: ticket.status as any, priority: ticket.priority as any, leadId: ticket.leadId || '' });
     setModalOpen(true);
   };
 
@@ -118,7 +118,7 @@ export default function TicketDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[var(--text)]">#{ticket.number} - {ticket.subject}</h1>
-            <p className="text-sm text-[var(--text-secondary)]">{ticket.contact?.name || 'Sin contacto'}</p>
+            <p className="text-sm text-[var(--text-secondary)]">{ticket.lead?.name || 'Sin lead'}</p>
           </div>
           <div className="flex gap-2">
             <Badge variant={pc.variant}>{pc.label}</Badge>
@@ -153,9 +153,9 @@ export default function TicketDetailPage() {
                   <p className="mt-1"><Badge variant={pc.variant}>{pc.label}</Badge></p>
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg)]">
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Contacto</p>
-                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{ticket.contact?.name || '—'}</p>
-                  {ticket.contact?.email && <p className="text-xs text-[var(--text-secondary)]">{ticket.contact.email}</p>}
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Lead</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{ticket.lead?.name || '—'}</p>
+                  {ticket.lead?.email && <p className="text-xs text-[var(--text-secondary)]">{ticket.lead.email}</p>}
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg)]">
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Asignado a</p>
@@ -198,7 +198,7 @@ export default function TicketDetailPage() {
           )}
 
           {activeTab === 'activity' && (
-            <ActivityTimeline contactId={ticket.contactId} />
+            <ActivityTimeline leadId={ticket.leadId} />
           )}
 
           {activeTab === 'notes' && (
@@ -233,7 +233,7 @@ export default function TicketDetailPage() {
                 <option value="low">Baja</option><option value="medium">Media</option><option value="high">Alta</option><option value="critical">Crítica</option>
               </select>
             </div>
-            <SearchSelect label="Contacto" value={form.contactId} onChange={(id) => setForm({ ...form, contactId: id })} endpoint="/contacts" placeholder="Buscar contacto por nombre..." displaySub={(c) => c.email} />
+            <SearchSelect label="Lead" value={form.leadId} onChange={(id) => setForm({ ...form, leadId: id })} endpoint="/leads" displayLabel={(l) => l.name} displaySub={(l) => l.email || ''} placeholder="Buscar lead por nombre..." />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>

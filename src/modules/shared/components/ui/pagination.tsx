@@ -1,4 +1,4 @@
-interface PaginationProps {
+﻿interface PaginationProps {
   page: number;
   limit: number;
   total: number;
@@ -15,7 +15,7 @@ export function Pagination({ page, limit, total, onPageChange }: PaginationProps
   for (let i = start; i <= end; i++) pages.push(i);
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 bg-white border-t border-[var(--border)] rounded-b-lg">
+    <div className="flex items-center justify-between px-5 py-3 bg-[var(--card-bg)] border-t border-[var(--border)] rounded-b-lg">
       <div className="text-sm text-[var(--text-muted)]">
         <span className="font-medium text-gray-700">{Math.min((page - 1) * limit + 1, total)}</span>
         {' '}-{' '}
@@ -55,3 +55,4 @@ export function Pagination({ page, limit, total, onPageChange }: PaginationProps
     </div>
   );
 }
+

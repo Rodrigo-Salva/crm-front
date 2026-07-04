@@ -16,8 +16,7 @@ interface CustomField {
 }
 
 const ENTITIES = [
-  { value: 'contact', label: 'Contactos' },
-  { value: 'deal', label: 'Negocios' },
+  { value: 'lead', label: 'Leads' },
   { value: 'company', label: 'Empresas' },
   { value: 'ticket', label: 'Tickets' },
   { value: 'product', label: 'Productos' },
@@ -37,7 +36,7 @@ const FIELD_TYPES = [
 export default function CustomFieldsPage() {
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterEntity, setFilterEntity] = useState('contact');
+  const [filterEntity, setFilterEntity] = useState('lead');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<CustomField | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -80,7 +79,7 @@ export default function CustomFieldsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Campos personalizados" description="Agrega campos adicionales a tus módulos" />
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración" title="Campos personalizados" description="Agrega campos adicionales a tus módulos" />
 
       <div className="flex items-center justify-between mb-6">
         <div className="flex gap-2">
@@ -113,8 +112,8 @@ export default function CustomFieldsPage() {
                 <div>
                   <h3 className="text-sm font-medium text-[var(--text)]">{f.label}</h3>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    {f.name} · {FIELD_TYPES.find((t) => t.value === f.type)?.label || f.type}
-                    {f.required && ' · Requerido'}
+                    {f.name} Â· {FIELD_TYPES.find((t) => t.value === f.type)?.label || f.type}
+                    {f.required && ' Â· Requerido'}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -138,7 +137,7 @@ export default function CustomFieldsPage() {
       <ConfirmDialog
         open={!!deleteId}
         title="Eliminar campo"
-        message="¿Estás seguro de eliminar este campo personalizado?"
+        message="Â¿Estás seguro de eliminar este campo personalizado?"
         onConfirm={handleDelete}
         onClose={() => setDeleteId(null)}
       />
@@ -204,9 +203,11 @@ function CustomFieldModal({
         </label>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Guardandoâ¦' : 'Guardar'}</Button>
         </div>
       </form>
     </Modal>
   );
 }
+
+
