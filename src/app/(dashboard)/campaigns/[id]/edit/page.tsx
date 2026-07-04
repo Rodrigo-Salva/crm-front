@@ -13,13 +13,13 @@ export default function EditCampaignPage() {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', subject: '', body: '', status: 'draft' });
+  const [form, setForm] = useState({ name: '', subject: '', body: '' });
 
   const load = useCallback(async () => {
     try {
       const res = await api.get<Campaign>(`/campaigns/${id}`);
       setCampaign(res);
-      setForm({ name: res.name, subject: res.subject || '', body: res.body || '', status: res.status || 'draft' });
+      setForm({ name: res.name, subject: res.subject || '', body: res.body || '' });
     } catch {} finally { setLoading(false); }
   }, [id]);
 
@@ -33,6 +33,14 @@ export default function EditCampaignPage() {
 
   if (loading) return <Loading />;
   if (!campaign) return <p className="text-center py-20 text-gray-500">Campaña no encontrada</p>;
+  if (campaign.status !== 'draft') {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-20">
+        <p className="text-gray-500">Solo las campañas en estado &quot;Borrador&quot; pueden editarse.</p>
+        <Button className="mt-4" variant="secondary" onClick={() => router.push(`/campaigns/${id}`)}>Volver al detalle</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in max-w-2xl mx-auto">
@@ -47,12 +55,6 @@ export default function EditCampaignPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cuerpo</label>
             <textarea value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} rows={6} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] font-mono" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)]">
-              <option value="draft">Borrador</option><option value="sending">Enviando</option><option value="sent">Enviada</option><option value="cancelled">Cancelada</option>
-            </select>
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" type="button" onClick={() => router.back()}>Cancelar</Button>
