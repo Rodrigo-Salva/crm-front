@@ -2,17 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, PageHeader, Card, Table, Badge, SearchInput, Modal, Input, Loading, EmptyState, SearchSelect } from '@/modules/shared';
+import { Button, PageHeader, Card, Table, Badge, SearchInput, Loading, EmptyState, HealthBadge } from '@/modules/shared';
+import { Tabs } from '@/modules/shared/components/ui/tab';
+import { Modal } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
 import { Lead } from '@/modules/shared/types';
+import { BatchActionsBar } from '@/modules/shared/components/ui/batch-actions';
+import { useSelection } from '@/modules/shared/hooks/use-selection';
+import { LeadsKanbanBoard } from '@/modules/leads/components/leads-kanban-board';
+import { formatCurrency } from '@/modules/shared/utils/format';
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  new: { label: 'Nuevo', variant: 'primary' },
-  contacted: { label: 'Contactado', variant: 'warning' },
-  qualified: { label: 'Calificado', variant: 'success' },
-  converted: { label: 'Convertido', variant: 'info' },
-  lost: { label: 'Perdido', variant: 'danger' },
-};
+interface PipelineStageOption {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 const sourceConfig: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
   web: { label: 'Web', variant: 'default' },
@@ -20,15 +24,6 @@ const sourceConfig: Record<string, { label: string; variant: 'default' | 'primar
   phone: { label: 'Teléfono', variant: 'primary' },
   email: { label: 'Email', variant: 'warning' },
 };
-
-const statusOptions = [
-  { value: '', label: 'Todos los estados' },
-  { value: 'new', label: 'Nuevo' },
-  { value: 'contacted', label: 'Contactado' },
-  { value: 'qualified', label: 'Calificado' },
-  { value: 'converted', label: 'Convertido' },
-  { value: 'lost', label: 'Perdido' },
-];
 
 const sourceOptions = [
   { value: '', label: 'Todas las fuentes' },
@@ -45,12 +40,19 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
+  const [customerStatusFilter, setCustomerStatusFilter] = useState('');
+  const [stages, setStages] = useState<PipelineStageOption[]>([]);
 
-  const [convertOpen, setConvertOpen] = useState(false);
-  const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
-  const [conversionContactId, setConversionContactId] = useState('');
-  const [conversionDealTitle, setConversionDealTitle] = useState('');
-  const [converting, setConverting] = useState(false);
+  const sel = useSelection<Lead>();
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [batchEditOpen, setBatchEditOpen] = useState(false);
+  const [batchStatus, setBatchStatus] = useState('');
+  const [batchSaving, setBatchSaving] = useState(false);
+  const [view, setView] = useState('tabla');
+
+  useEffect(() => {
+    api.get<PipelineStageOption[]>('/pipeline-stages').then((res) => setStages(Array.isArray(res) ? res : [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,6 +61,7 @@ export default function LeadsPage() {
       if (search) params.set('search', search);
       if (statusFilter) params.set('status', statusFilter);
       if (sourceFilter) params.set('source', sourceFilter);
+      if (customerStatusFilter) params.set('customerStatus', customerStatusFilter);
       const res = await api.get<any>(`/leads?${params}`);
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -66,32 +69,27 @@ export default function LeadsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, sourceFilter]);
+  }, [search, statusFilter, sourceFilter, customerStatusFilter]);
 
   useEffect(() => { load(); }, [load]);
 
-  const openConvert = (lead: Lead) => {
-    setConvertingLead(lead);
-    setConversionContactId('');
-    setConversionDealTitle('');
-    setConvertOpen(true);
+  const handleBatchDelete = async () => {
+    setBatchLoading(true);
+    try {
+      await Promise.all(Array.from(sel.selected).map((id) => api.delete(`/leads/${id}`)));
+      sel.clear();
+      load();
+    } catch {} finally { setBatchLoading(false); }
   };
 
-  const handleConvert = async () => {
-    if (!convertingLead || !conversionContactId) return;
-    setConverting(true);
+  const handleBatchEdit = async () => {
+    setBatchSaving(true);
     try {
-      await api.post(`/leads/${convertingLead.id}/convert`, {
-        contactId: conversionContactId,
-        dealTitle: conversionDealTitle || undefined,
-      });
-      setConvertOpen(false);
+      await Promise.all(Array.from(sel.selected).map((id) => api.patch(`/leads/${id}`, { status: batchStatus })));
+      sel.clear();
+      setBatchEditOpen(false);
       load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setConverting(false);
-    }
+    } catch {} finally { setBatchSaving(false); }
   };
 
   const columns = [
@@ -104,28 +102,19 @@ export default function LeadsPage() {
       </button>
     )},
     { key: 'email', label: 'Email', render: (l: Lead) => <span className="text-[var(--text-secondary)]">{l.email || '—'}</span> },
-    { key: 'company', label: 'Empresa', render: (l: Lead) => <span className="text-[var(--text-secondary)]">{l.company || '—'}</span> },
+    { key: 'company', label: 'Empresa', render: (l: Lead) => <span className="text-[var(--text-secondary)]">{l.account?.name || l.companyName || l.company || '—'}</span> },
+    { key: 'value', label: 'Valor', render: (l: Lead) => <span className="font-semibold">{l.value ? formatCurrency(l.value, l.currency) : '—'}</span> },
     { key: 'source', label: 'Fuente', render: (l: Lead) => {
       const cfg = sourceConfig[l.source] || { label: l.source || 'Otro', variant: 'default' as const };
       return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
     }},
-    { key: 'status', label: 'Estado', render: (l: Lead) => {
-      const cfg = statusConfig[l.status] || { label: l.status, variant: 'default' as const };
-      return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
-    }},
+    { key: 'status', label: 'Etapa', render: (l: Lead) => <Badge variant="default">{l.status}</Badge> },
     { key: 'score', label: 'Puntaje', render: (l: Lead) => <span className="font-semibold">{l.score ?? '—'}</span> },
+    { key: 'health', label: 'Salud', render: (l: Lead) => l.healthStatus && l.healthStatus !== 'unknown' ? <HealthBadge status={l.healthStatus} score={l.healthScore} /> : <span className="text-[var(--text-secondary)]">—</span> },
     { key: 'owner', label: 'Propietario', render: (l: Lead) => <span className="text-[var(--text-secondary)]">{l.owner?.name || '—'}</span> },
     { key: 'createdAt', label: 'Creado', render: (l: Lead) => <span className="text-[var(--text-secondary)]">{new Date(l.createdAt).toLocaleDateString()}</span> },
     { key: 'actions', label: '', render: (l: Lead) => (
       <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-        {l.status !== 'converted' && (
-          <button
-            onClick={() => openConvert(l)}
-            className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[var(--primary)] text-white hover:bg-[var(--primary-dark)] transition-colors"
-          >
-            Convertir
-          </button>
-        )}
         <button onClick={() => router.push(`/leads/${l.id}`)} className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--primary)] hover:bg-[var(--sidebar-hover)] transition-colors" title="Ver detalle">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -140,10 +129,16 @@ export default function LeadsPage() {
     <div className="animate-fade-in">
       <PageHeader
         title="Leads"
-        description="Gestiona tus leads y oportunidades"
+        description="Gestiona el ciclo de vida completo de tus leads, de prospecto a venta"
         actions={<Button onClick={() => router.push('/leads/create')}>+ Nuevo Lead</Button>}
       />
-      <Card padding={false}>
+      <Tabs tabs={[{ id: 'tabla', label: 'Tabla' }, { id: 'kanban', label: 'Kanban' }]} active={view} onChange={setView} />
+      {view === 'kanban' ? (
+        <div className="mt-4">
+          <LeadsKanbanBoard />
+        </div>
+      ) : (
+      <Card padding={false} className="mt-4">
         <div className="p-4 border-b border-[var(--border)] space-y-3">
           <div className="flex items-center justify-between gap-4">
             <SearchInput value={search} onChange={(v) => { setSearch(v); }} placeholder="Buscar por nombre, email o empresa..." />
@@ -153,7 +148,8 @@ export default function LeadsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="block rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
               >
-                {statusOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                <option value="">Todas las etapas</option>
+                {stages.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
               </select>
               <select
                 value={sourceFilter}
@@ -162,9 +158,23 @@ export default function LeadsPage() {
               >
                 {sourceOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+              <select
+                value={customerStatusFilter}
+                onChange={(e) => setCustomerStatusFilter(e.target.value)}
+                className="block rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+              >
+                <option value="">Todos los estados de cliente</option>
+                <option value="new">Nuevo</option>
+                <option value="contacted">Contactado</option>
+                <option value="qualified">Calificado</option>
+                <option value="lost">Perdido</option>
+              </select>
             </div>
           </div>
         </div>
+        {sel.selected.size > 0 && (
+          <BatchActionsBar count={sel.selected.size} onDelete={handleBatchDelete} onClear={sel.clear} onEdit={() => { setBatchStatus(''); setBatchEditOpen(true); }} loading={batchLoading} />
+        )}
         {loading ? <Loading /> : data.length === 0 ? (
           <div className="p-4">
             <EmptyState
@@ -174,31 +184,25 @@ export default function LeadsPage() {
             />
           </div>
         ) : (
-          <Table columns={columns} data={data} />
+          <Table columns={columns} data={data} selected={sel.selected} onToggle={sel.toggle} onToggleAll={() => sel.toggleAll(data)} allSelected={sel.allSelected(data)} />
         )}
       </Card>
+      )}
 
-      <Modal open={convertOpen} onClose={() => setConvertOpen(false)} title={`Convertir Lead: ${convertingLead?.name}`}>
-        <div className="space-y-4">
-          <SearchSelect
-            label="Seleccionar contacto"
-            value={conversionContactId}
-            onChange={(id) => setConversionContactId(id)}
-            endpoint="/contacts"
-            placeholder="Buscar contacto por nombre..."
-            displaySub={(c) => c.email}
-          />
-          <Input
-            label="Título de la oportunidad (opcional)"
-            value={conversionDealTitle}
-            onChange={(e) => setConversionDealTitle(e.target.value)}
-            placeholder="Ej: Seguimiento de lead"
-          />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setConvertOpen(false)}>Cancelar</Button>
-            <Button onClick={handleConvert} loading={converting} disabled={!conversionContactId}>Convertir</Button>
+      <Modal open={batchEditOpen} onClose={() => setBatchEditOpen(false)} title={`Editar ${sel.selected.size} leads`}>
+        <form onSubmit={(e) => { e.preventDefault(); handleBatchEdit(); }} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cambiar etapa a</label>
+            <select value={batchStatus} onChange={(e) => setBatchStatus(e.target.value)} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)]">
+              <option value="">Seleccionar...</option>
+              {stages.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
           </div>
-        </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setBatchEditOpen(false)}>Cancelar</Button>
+            <Button type="submit" loading={batchSaving} disabled={!batchStatus}>Actualizar {sel.selected.size} leads</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

@@ -1,24 +1,69 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Input } from '@/modules/shared';
+import { Button, Card, Input, SearchSelect } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
-import { Lead } from '@/modules/shared/types';
+import { Lead, Currency } from '@/modules/shared/types';
+import { CURRENCIES } from '@/modules/shared/utils/format';
 
 const sourceOptions = ['web', 'referral', 'phone', 'email', 'event', 'partner', 'other'];
-const statusOptions = ['new', 'contacted', 'qualified', 'converted', 'lost'];
+
+interface PipelineStageOption {
+  id: string;
+  name: string;
+}
+
+interface CampaignOption {
+  id: string;
+  name: string;
+}
 
 export default function CreateLeadPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: 'new', notes: '' });
+  const [stages, setStages] = useState<PipelineStageOption[]>([]);
+  const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
+  const [careers, setCareers] = useState<any[]>([]);
+  const [modalities, setModalities] = useState<any[]>([]);
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: '', notes: '', value: 0, currency: 'MXN' as Currency, expectedCloseDate: '', companyId: '', companyName: '', position: '', customerStatus: '', campaignId: '', careerId: '', modalityId: '', utmSource: '', utmMedium: '', utmCampaign: '', utmTerm: '', utmContent: '' });
+
+  useEffect(() => {
+    api.get<PipelineStageOption[]>('/pipeline-stages').then((res) => {
+      const list = Array.isArray(res) ? res : [];
+      setStages(list);
+      setForm((f) => ({ ...f, status: f.status || list[0]?.name || '' }));
+    }).catch(() => {});
+    api.get<CampaignOption[]>('/marketing-campaigns').then((res) => {
+      setCampaigns(Array.isArray(res) ? res : []);
+    }).catch(() => {});
+    api.get<any[]>('/careers').then((res) => {
+      setCareers(Array.isArray(res) ? res.filter(c => c.active) : []);
+    }).catch(() => {});
+    api.get<any[]>('/modalities').then((res) => {
+      setModalities(Array.isArray(res) ? res.filter(m => m.active) : []);
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await api.post<Lead>('/leads', form);
+      const res = await api.post<Lead>('/leads', {
+        ...form,
+        companyId: form.companyId || undefined,
+        companyName: form.companyName || undefined,
+        position: form.position || undefined,
+        customerStatus: form.customerStatus || undefined,
+        campaignId: form.campaignId || undefined,
+        careerId: form.careerId || undefined,
+        modalityId: form.modalityId || undefined,
+        utmSource: form.utmSource || undefined,
+        utmMedium: form.utmMedium || undefined,
+        utmCampaign: form.utmCampaign || undefined,
+        utmTerm: form.utmTerm || undefined,
+        utmContent: form.utmContent || undefined,
+      });
       router.push(`/leads/${res.id}`);
     } catch {} finally { setSaving(false); }
   };
@@ -43,10 +88,62 @@ export default function CreateLeadPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Etapa</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
-                {statusOptions.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                {stages.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
               </select>
+            </div>
+            <Input label="Valor estimado" type="number" step="0.01" value={String(form.value)} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} placeholder="0.00" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
+              <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value as Currency })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <Input label="Fecha cierre estimada" type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} />
+            <SearchSelect label="Empresa vinculada (opcional)" value={form.companyId} onChange={(id) => setForm({ ...form, companyId: id })} endpoint="/companies" placeholder="Buscar empresa por nombre..." />
+            <Input label="Nombre de empresa (libre)" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} placeholder="Si no está en el catálogo" />
+            <Input label="Cargo / Posición" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Ej. Gerente de compras" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado de cliente (opcional)</label>
+              <select value={form.customerStatus} onChange={(e) => setForm({ ...form, customerStatus: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                <option value="">Sin estado</option>
+                <option value="new">Nuevo</option>
+                <option value="contacted">Contactado</option>
+                <option value="qualified">Calificado</option>
+                <option value="lost">Perdido</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Campaña (opcional)</label>
+              <select value={form.campaignId} onChange={(e) => setForm({ ...form, campaignId: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                <option value="">Sin campaña</option>
+                {campaigns.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Carrera de interés</label>
+              <select value={form.careerId} onChange={(e) => setForm({ ...form, careerId: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                <option value="">Seleccionar carrera</option>
+                {careers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad</label>
+              <select value={form.modalityId} onChange={(e) => setForm({ ...form, modalityId: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                <option value="">Seleccionar modalidad</option>
+                {modalities.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <h3 className="text-sm font-medium text-[var(--text)] mb-3 border-b border-[var(--border)] pb-2">Seguimiento (UTMs)</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <Input label="UTM Source" value={form.utmSource} onChange={(e) => setForm({ ...form, utmSource: e.target.value })} placeholder="Ej. google, facebook" />
+                <Input label="UTM Medium" value={form.utmMedium} onChange={(e) => setForm({ ...form, utmMedium: e.target.value })} placeholder="Ej. cpc, banner" />
+                <Input label="UTM Campaign" value={form.utmCampaign} onChange={(e) => setForm({ ...form, utmCampaign: e.target.value })} placeholder="Ej. promo_verano" />
+                <Input label="UTM Term" value={form.utmTerm} onChange={(e) => setForm({ ...form, utmTerm: e.target.value })} placeholder="Ej. curso de ingles" />
+                <Input label="UTM Content" value={form.utmContent} onChange={(e) => setForm({ ...form, utmContent: e.target.value })} placeholder="Ej. boton_rojo" />
+              </div>
             </div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>

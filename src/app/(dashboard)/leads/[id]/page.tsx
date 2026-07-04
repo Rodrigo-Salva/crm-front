@@ -3,22 +3,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, PageHeader, Card, Loading, Badge, Modal } from '@/modules/shared';
+import { Button, PageHeader, Card, Loading, Badge, Modal, Input, HealthBadge } from '@/modules/shared';
+import { PlaybookRunsList } from '@/modules/playbooks/components/playbook-runs-list';
 import { Tabs } from '@/modules/shared/components/ui/tab';
-import { SearchSelect } from '@/modules/shared/components/ui/search-select';
-import { Input } from '@/modules/shared/components/ui/input';
 import { api } from '@/modules/shared/services/api';
 import { Lead } from '@/modules/shared/types';
 import { ActivityTimeline } from '@/modules/activities/components/activity-timeline';
 import { NotesList } from '@/modules/notes/components/notes-list';
-
-const statusConfig: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  new: { label: 'Nuevo', variant: 'primary' },
-  contacted: { label: 'Contactado', variant: 'warning' },
-  qualified: { label: 'Calificado', variant: 'success' },
-  converted: { label: 'Convertido', variant: 'info' },
-  lost: { label: 'Perdido', variant: 'danger' },
-};
+import { AuditTimeline } from '@/modules/audit/components/audit-timeline';
+import { FileAttachments } from '@/modules/uploads/components/file-attachments';
+import { formatCurrency } from '@/modules/shared/utils/format';
 
 const sourceLabels: Record<string, string> = {
   web: 'Web',
@@ -32,8 +26,13 @@ const sourceLabels: Record<string, string> = {
 
 const tabOptions = [
   { id: 'info', label: 'Información' },
+  { id: 'quotes', label: 'Cotizaciones' },
+  { id: 'email', label: 'Correo' },
   { id: 'activity', label: 'Actividad' },
   { id: 'notes', label: 'Notas' },
+  { id: 'audit', label: 'Historial' },
+  { id: 'files', label: 'Archivos' },
+  { id: 'playbooks', label: 'Playbooks' },
 ];
 
 export default function LeadDetailPage() {
@@ -42,19 +41,24 @@ export default function LeadDetailPage() {
   const id = params.id as string;
 
   const [lead, setLead] = useState<Lead | null>(null);
+  const [customFields, setCustomFields] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info');
-  const [convertModalOpen, setConvertModalOpen] = useState(false);
-  const [contactId, setContactId] = useState('');
-  const [dealTitle, setDealTitle] = useState('');
-  const [converting, setConverting] = useState(false);
+  const [portalOpen, setPortalOpen] = useState(false);
+  const [portalPassword, setPortalPassword] = useState('');
+  const [portalSaving, setPortalSaving] = useState(false);
   const [scoreLoading, setScoreLoading] = useState(false);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<Lead>(`/leads/${id}`);
-      setLead(res);
+      const [leadRes, fieldsRes] = await Promise.all([
+        api.get<Lead>(`/leads/${id}`),
+        api.get<any[]>('/custom-fields?entity=lead').catch(() => []),
+      ]);
+      setLead(leadRes);
+      setCustomFields(Array.isArray(fieldsRes) ? fieldsRes : []);
     } catch {
       console.error('Error loading lead');
     } finally {
@@ -64,18 +68,17 @@ export default function LeadDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleConvert = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactId) return;
-    setConverting(true);
+  const handleTogglePortal = async (enable: boolean) => {
+    setPortalSaving(true);
     try {
-      await api.post(`/leads/${id}/convert`, { contactId, dealTitle: dealTitle || undefined });
-      setConvertModalOpen(false);
-      window.location.reload();
+      await api.patch(`/auth/leads/${id}/portal-access`, { enable, password: portalPassword || undefined });
+      setPortalOpen(false);
+      setPortalPassword('');
+      load();
     } catch {
-      console.error('Error converting lead');
+      console.error('Error toggling portal access');
     } finally {
-      setConverting(false);
+      setPortalSaving(false);
     }
   };
 
@@ -91,6 +94,18 @@ export default function LeadDetailPage() {
     }
   };
 
+  const handleRecalculateHealth = async () => {
+    setHealthLoading(true);
+    try {
+      await api.post(`/leads/${id}/recalculate-health`, {});
+      load();
+    } catch {
+      console.error('Error recalculating health');
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   if (loading) return <Loading />;
   if (!lead) return (
     <div className="text-center py-20">
@@ -99,7 +114,6 @@ export default function LeadDetailPage() {
     </div>
   );
 
-  const statusCfg = statusConfig[lead.status] || { label: lead.status, variant: 'default' as const };
   const sourceLabel = sourceLabels[lead.source] || lead.source;
 
   return (
@@ -113,8 +127,9 @@ export default function LeadDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[var(--text)]">{lead.name}</h1>
+            <p className="text-sm text-[var(--text-secondary)]">{lead.position ? `${lead.position} · ` : ''}{lead.companyName || lead.account?.name || 'Sin empresa'}</p>
           </div>
-          <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+          <Badge variant="default">{lead.status}</Badge>
           <Badge variant="default">{sourceLabel}</Badge>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -122,10 +137,15 @@ export default function LeadDetailPage() {
             </svg>
             {lead.score}
           </div>
+          {lead.healthStatus && lead.healthStatus !== 'unknown' && (
+            <HealthBadge status={lead.healthStatus} score={lead.healthScore} />
+          )}
         </div>
         <div className="flex items-center gap-2">
+          {lead.value > 0 && <p className="text-2xl font-bold text-[var(--text)] mr-4">{formatCurrency(lead.value, lead.currency)}</p>}
           <Button variant="secondary" loading={scoreLoading} onClick={handleRecalculateScore}>Recalcular Score</Button>
-          <Button variant="secondary" onClick={() => setConvertModalOpen(true)}>Convertir</Button>
+          <Button variant="secondary" loading={healthLoading} onClick={handleRecalculateHealth}>Recalcular Salud</Button>
+          <Button variant="secondary" onClick={() => setPortalOpen(true)}>Acceso al Portal</Button>
           <Button onClick={() => router.push(`/leads/${id}/edit`)}>Editar</Button>
         </div>
       </div>
@@ -135,74 +155,194 @@ export default function LeadDetailPage() {
 
         <div className="p-6">
           {activeTab === 'info' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Nombre</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.name}</p>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Email</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.email || '—'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Teléfono</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.phone || '—'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Empresa</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.company || '—'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Valor estimado</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.value ? formatCurrency(lead.value, lead.currency) : '—'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Cierre estimado</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">
+                    {lead.expectedCloseDate ? new Date(lead.expectedCloseDate).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+                  </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Empresa vinculada</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.account?.name || lead.companyName || '—'}</p>
+                  {lead.position && <p className="text-xs text-[var(--text-secondary)]">{lead.position}</p>}
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Estado de cliente</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.customerStatus || '—'}</p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Campaña</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.campaign?.name || '—'}</p>
+                  {lead.campaign?.channel && <p className="text-xs text-[var(--text-secondary)]">{lead.campaign.channel}</p>}
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)]">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Notas</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)] whitespace-pre-wrap">{lead.notes || '—'}</p>
+                </div>
+                {lead.career && (
+                  <div className="p-4 rounded-xl bg-[var(--bg)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Carrera</p>
+                    <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.career.name}</p>
+                  </div>
+                )}
+                {lead.modality && (
+                  <div className="p-4 rounded-xl bg-[var(--bg)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Modalidad</p>
+                    <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.modality.name}</p>
+                  </div>
+                )}
+                {(lead.utmSource || lead.utmMedium || lead.utmCampaign) && (
+                  <>
+                    <div className="p-4 rounded-xl bg-[var(--bg)]">
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">UTM Source</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.utmSource || '—'}</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[var(--bg)]">
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">UTM Medium</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.utmMedium || '—'}</p>
+                    </div>
+                    <div className="p-4 rounded-xl bg-[var(--bg)]">
+                      <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">UTM Campaign</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.utmCampaign || '—'}</p>
+                    </div>
+                    {lead.utmTerm && (
+                      <div className="p-4 rounded-xl bg-[var(--bg)]">
+                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">UTM Term</p>
+                        <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.utmTerm}</p>
+                      </div>
+                    )}
+                    {lead.utmContent && (
+                      <div className="p-4 rounded-xl bg-[var(--bg)]">
+                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">UTM Content</p>
+                        <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.utmContent}</p>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Email</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.email || '—'}</p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Teléfono</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.phone || '—'}</p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Empresa</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.company || '—'}</p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Origen</p>
-                <p className="mt-1"><Badge variant="default">{sourceLabel}</Badge></p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Estado</p>
-                <p className="mt-1"><Badge variant={statusCfg.variant}>{statusCfg.label}</Badge></p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Score</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.score}</p>
-              </div>
-              <div className="p-4 rounded-xl bg-[var(--bg)]">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Notas</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)] whitespace-pre-wrap">{lead.notes || '—'}</p>
-              </div>
+              {customFields.length > 0 && (
+                <>
+                  <h4 className="text-sm font-semibold text-[var(--text)] mb-3">Campos personalizados</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {customFields.map((f: any) => (
+                      <div key={f.id} className="p-4 rounded-xl bg-[var(--bg)]">
+                        <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">{f.label}</p>
+                        <p className="mt-1 text-sm font-medium text-[var(--text)]">
+                          {lead.customFields?.[f.name] ?? '—'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
+          {activeTab === 'quotes' && <RelatedQuotes leadId={lead.id} />}
+
+          {activeTab === 'email' && <EmailHistory leadId={lead.id} />}
+
           {activeTab === 'activity' && (
-            <ActivityTimeline contactId={lead.id} />
+            <ActivityTimeline leadId={lead.id} />
           )}
 
           {activeTab === 'notes' && (
             <NotesList relatedType="lead" relatedId={lead.id} />
           )}
+
+          {activeTab === 'audit' && (
+            <AuditTimeline entity="lead" entityId={lead.id} />
+          )}
+
+          {activeTab === 'files' && <FileAttachments entity="lead" entityId={lead.id} />}
+
+          {activeTab === 'playbooks' && <PlaybookRunsList leadId={lead.id} />}
         </div>
       </Card>
 
-      <Modal open={convertModalOpen} onClose={() => setConvertModalOpen(false)} title="Convertir Lead en Contacto">
-        <form onSubmit={handleConvert} className="space-y-4">
-          <SearchSelect
-            label="Contacto existente"
-            value={contactId}
-            onChange={(id) => setContactId(id)}
-            endpoint="/contacts"
-            placeholder="Buscar contacto por nombre..."
-            displaySub={(c) => c.email}
-          />
+      <Modal open={portalOpen} onClose={() => setPortalOpen(false)} title="Acceso al Portal">
+        <div className="space-y-4">
           <Input
-            label="Título del negocio (opcional)"
-            value={dealTitle}
-            onChange={(e) => setDealTitle(e.target.value)}
-            placeholder="Ej: Seguimiento comercial"
+            label="Nueva contraseña (opcional al activar)"
+            type="password"
+            value={portalPassword}
+            onChange={(e) => setPortalPassword(e.target.value)}
+            placeholder="Dejar vacío para no cambiarla"
           />
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setConvertModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" loading={converting} disabled={!contactId}>Convertir</Button>
+            <Button variant="secondary" type="button" onClick={() => handleTogglePortal(false)} loading={portalSaving}>Desactivar acceso</Button>
+            <Button type="button" onClick={() => handleTogglePortal(true)} loading={portalSaving} disabled={!portalPassword}>Activar acceso</Button>
           </div>
-        </form>
+        </div>
       </Modal>
     </div>
+  );
+}
+
+function RelatedQuotes({ leadId }: { leadId: string }) {
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    api.get<any>(`/quotes?leadId=${leadId}`).then((res: any) => setQuotes(Array.isArray(res) ? res : res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, [leadId]);
+  if (loading) return <Loading />;
+  if (!quotes.length) return <p className="text-sm text-[var(--text-secondary)] text-center py-8">Sin cotizaciones relacionadas</p>;
+  return <div className="space-y-2">{quotes.map((q: any) => <RelatedRow key={q.id} href={`/quotes/${q.id}`} label={q.number} sub={`${formatCurrency(q.grandTotal, q.currency)} · ${q.status}`} />)}</div>;
+}
+
+function EmailHistory({ leadId }: { leadId: string }) {
+  const [emails, setEmails] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    api.get<any[]>(`/email/history?leadId=${leadId}`).then(setEmails).catch(() => {}).finally(() => setLoading(false));
+  }, [leadId]);
+  if (loading) return <Loading />;
+  if (!emails.length) return <p className="text-sm text-[var(--text-secondary)] text-center py-8">Sin correos electrónicos</p>;
+  return (
+    <div className="space-y-3">
+      {emails.map((e: any) => (
+        <div key={e.id} className="p-4 rounded-xl border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${e.direction === 'outbound' ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'}`}>{e.direction === 'outbound' ? 'Enviado' : 'Recibido'}</span>
+              <span className="text-sm font-medium text-[var(--text)]">{e.subject}</span>
+            </div>
+            <span className="text-xs text-[var(--text-secondary)]">{new Date(e.sentAt).toLocaleString('es-MX')}</span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            {e.direction === 'outbound' ? `Para: ${e.toEmail}` : `De: ${e.fromEmail}`}
+            {e.openedAt && <span className="ml-2 text-green-600">· Abierto</span>}
+          </p>
+          <div className="mt-2 text-sm text-[var(--text)] line-clamp-2" dangerouslySetInnerHTML={{ __html: e.body?.substring(0, 200) || '' }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RelatedRow({ href, label, sub }: { href: string; label: string; sub: string }) {
+  return (
+    <Link href={href} className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--sidebar-hover)] transition-colors border border-[var(--border)]">
+      <span className="text-sm font-medium text-[var(--text)]">{label}</span>
+      <span className="text-xs text-[var(--text-secondary)]">{sub}</span>
+    </Link>
   );
 }
