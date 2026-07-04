@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, PageHeader, Loading, Badge, Card, Table, Modal, Input } from '@/modules/shared';
+import { Button, Loading, Badge, Card, Table, Modal, Input } from '@/modules/shared';
 import { Tabs } from '@/modules/shared/components/ui/tab';
 import { api } from '@/modules/shared/services/api';
 import { Quote } from '@/modules/shared/types';
@@ -21,11 +21,10 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'primar
 const tabOptions = [
   { id: 'info', label: 'Información' },
   { id: 'items', label: 'Productos' },
+  { id: 'payments', label: 'Pagos' },
   { id: 'activity', label: 'Actividad' },
   { id: 'notes', label: 'Notas' },
 ];
-
-const emptyForm = { status: 'draft' as 'draft' | 'sent' | 'approved' | 'rejected' | 'converted', notes: '', currency: '' };
 
 export default function QuoteDetailPage() {
   const params = useParams();
@@ -35,16 +34,24 @@ export default function QuoteDetailPage() {
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
-  const [saving, setSaving] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [approvalOpen, setApprovalOpen] = useState(false);
+  const [approvalReason, setApprovalReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ amount: 0, method: 'transfer', reference: '', notes: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<Quote>(`/quotes/${id}`);
+      const [res, pays] = await Promise.all([
+        api.get<Quote>(`/quotes/${id}`),
+        api.get<any[]>(`/payments/quote/${id}`)
+      ]);
       setQuote(res);
+      setPayments(pays);
     } catch (err) {
       console.error(err);
     } finally {
@@ -54,24 +61,30 @@ export default function QuoteDetailPage() {
 
   useEffect(() => { load() }, [load]);
 
-  const openEdit = () => {
-    if (!quote) return;
-    setForm({ status: quote.status as any, notes: quote.notes || '' });
-    setModalOpen(true);
+  const handleSend = async () => {
+    setSending(true);
+    try { await api.post(`/quotes/${id}/send`, {}); load(); } catch {} finally { setSending(false); }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestApproval = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    setActionLoading(true);
     try {
-      await api.patch(`/quotes/${id}`, form);
-      setModalOpen(false);
+      await api.post(`/quotes/${id}/request-approval`, { reason: approvalReason });
+      setApprovalOpen(false);
+      setApprovalReason('');
       load();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
+    } catch {} finally { setActionLoading(false); }
+  };
+
+  const handleApprove = async () => {
+    setActionLoading(true);
+    try { await api.post(`/quotes/${id}/approve`, {}); load(); } catch {} finally { setActionLoading(false); }
+  };
+
+  const handleReject = async () => {
+    setActionLoading(true);
+    try { await api.post(`/quotes/${id}/reject`, {}); load(); } catch {} finally { setActionLoading(false); }
   };
 
   const handlePay = async () => {
@@ -85,6 +98,41 @@ export default function QuoteDetailPage() {
       console.error(err);
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleRegisterPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionLoading(true);
+    try {
+      await api.post('/payments', { ...paymentForm, quoteId: id, amount: Number(paymentForm.amount) });
+      setPaymentOpen(false);
+      setPaymentForm({ amount: 0, method: 'transfer', reference: '', notes: '' });
+      load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const downloadReceipt = async (paymentId: string) => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/payments/${paymentId}/receipt`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -106,6 +154,18 @@ export default function QuoteDetailPage() {
     { key: 'total', label: 'Total', render: (i: any) => <span className="font-semibold">{formatCurrency(i.total, quote.currency)}</span> },
   ];
 
+  const paymentColumns = [
+    { key: 'date', label: 'Fecha', render: (p: any) => new Date(p.createdAt).toLocaleDateString() },
+    { key: 'amount', label: 'Monto', render: (p: any) => <span className="font-semibold text-[var(--success)]">{formatCurrency(p.amount, quote.currency)}</span> },
+    { key: 'method', label: 'Método', render: (p: any) => <span className="capitalize">{p.method}</span> },
+    { key: 'reference', label: 'Referencia', render: (p: any) => p.reference || '—' },
+    { key: 'actions', label: '', render: (p: any) => (
+      <Button size="sm" variant="secondary" onClick={() => downloadReceipt(p.id)}>
+        Descargar Recibo
+      </Button>
+    )}
+  ];
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
@@ -117,7 +177,7 @@ export default function QuoteDetailPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-[var(--text)]">{quote.number}</h1>
-            <p className="text-sm text-[var(--text-secondary)]">{quote.contact?.name || 'Sin contacto'}</p>
+            <p className="text-sm text-[var(--text-secondary)]">{quote.lead?.name || 'Sin lead'}</p>
           </div>
           <Badge variant={cfg.variant}>{cfg.label}</Badge>
         </div>
@@ -131,8 +191,21 @@ export default function QuoteDetailPage() {
               Pagar con Stripe
             </Button>
           )}
-          <Button variant="secondary" onClick={() => router.push(`/quotes/${id}/edit`)}>Editar</Button>
-          <Button variant="secondary" onClick={openEdit}>Editar Rápido</Button>
+          {quote.status === 'draft' && (
+            <>
+              <Button variant="secondary" onClick={() => router.push(`/quotes/${id}/edit`)}>Editar</Button>
+              <Button onClick={handleSend} loading={sending}>Enviar</Button>
+            </>
+          )}
+          {quote.status === 'sent' && !quote.approvalRequest && (
+            <Button onClick={() => setApprovalOpen(true)}>Solicitar aprobación</Button>
+          )}
+          {quote.approvalRequest?.status === 'pending' && (
+            <>
+              <Button variant="secondary" onClick={handleReject} loading={actionLoading}>Rechazar</Button>
+              <Button onClick={handleApprove} loading={actionLoading}>Aprobar</Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -148,13 +221,9 @@ export default function QuoteDetailPage() {
                   <p className="mt-1"><Badge variant={cfg.variant}>{cfg.label}</Badge></p>
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg)]">
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Contacto</p>
-                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{quote.contact?.name || '—'}</p>
-                  {quote.contact?.email && <p className="text-xs text-[var(--text-secondary)]">{quote.contact.email}</p>}
-                </div>
-                <div className="p-4 rounded-xl bg-[var(--bg)]">
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Negocio</p>
-                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{quote.deal?.title || '—'}</p>
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Lead</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--text)]">{quote.lead?.name || '—'}</p>
+                  {quote.lead?.email && <p className="text-xs text-[var(--text-secondary)]">{quote.lead.email}</p>}
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg)]">
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Subtotal</p>
@@ -209,8 +278,41 @@ export default function QuoteDetailPage() {
             </div>
           )}
 
+          {activeTab === 'payments' && (
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Historial de Pagos</h3>
+                {quote.status !== 'converted' && (
+                  <Button onClick={() => {
+                    setPaymentForm({ ...paymentForm, amount: quote.grandTotal - payments.reduce((acc, p) => acc + p.amount, 0) });
+                    setPaymentOpen(true);
+                  }}>
+                    + Registrar Pago
+                  </Button>
+                )}
+              </div>
+              
+              {payments.length === 0 ? (
+                <div className="text-center py-10 border border-dashed border-[var(--border)] rounded-xl">
+                  <p className="text-[var(--text-secondary)]">No hay pagos registrados aún.</p>
+                </div>
+              ) : (
+                <>
+                  <Table columns={paymentColumns} data={payments} />
+                  <div className="flex justify-end mt-4 pt-4 border-t border-[var(--border)]">
+                    <div className="text-right space-y-1">
+                      <p className="text-sm text-[var(--text-secondary)]">Total Cotización: <span className="font-medium">{formatCurrency(quote.grandTotal, quote.currency)}</span></p>
+                      <p className="text-sm text-[var(--text-secondary)]">Total Pagado: <span className="font-medium text-[var(--success)]">{formatCurrency(payments.reduce((acc, p) => acc + p.amount, 0), quote.currency)}</span></p>
+                      <p className="text-lg font-bold text-[var(--text)]">Restante: {formatCurrency(quote.grandTotal - payments.reduce((acc, p) => acc + p.amount, 0), quote.currency)}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {activeTab === 'activity' && (
-            <ActivityTimeline contactId={quote.contactId} />
+            <ActivityTimeline leadId={quote.leadId} />
           )}
 
           {activeTab === 'notes' && (
@@ -219,36 +321,57 @@ export default function QuoteDetailPage() {
         </div>
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Editar Cotización">
-        <form onSubmit={handleSubmit} className="space-y-4">
-           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as any })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
-               <option value="draft">Borrador</option><option value="sent">Enviada</option><option value="approved">Aprobada</option><option value="rejected">Rechazada</option><option value="converted">Convertida</option>
-             </select>
-           </div>
-           <div>
-             <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
-             <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value as any })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
-               <option value="MXN">MXN</option>
-               <option value="USD">USD</option>
-               <option value="EUR">EUR</option>
-               <option value="CAD">CAD</option>
-               <option value="GBP">GBP</option>
-               <option value="ARS">ARS</option>
-               <option value="CLP">CLP</option>
-               <option value="COP">COP</option>
-               <option value="PEN">PEN</option>
-               <option value="BRL">BRL</option>
-             </select>
-           </div>
+      <Modal open={approvalOpen} onClose={() => setApprovalOpen(false)} title="Solicitar aprobación">
+        <form onSubmit={handleRequestApproval} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} placeholder="Notas adicionales..." className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]" />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+            <textarea value={approvalReason} onChange={(e) => setApprovalReason(e.target.value)} rows={3} required placeholder="¿Por qué necesita aprobación esta cotización?" className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" loading={saving}>Guardar Cambios</Button>
+            <Button variant="secondary" type="button" onClick={() => setApprovalOpen(false)}>Cancelar</Button>
+            <Button type="submit" loading={actionLoading}>Solicitar</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={paymentOpen} onClose={() => setPaymentOpen(false)} title="Registrar Pago">
+        <form onSubmit={handleRegisterPayment} className="space-y-4">
+          <Input 
+            label="Monto a pagar" 
+            type="number" 
+            step="0.01"
+            min="0"
+            max={quote.grandTotal - payments.reduce((acc, p) => acc + p.amount, 0)}
+            value={paymentForm.amount} 
+            onChange={(e) => setPaymentForm({ ...paymentForm, amount: parseFloat(e.target.value) })} 
+            required 
+          />
+          <div>
+            <label className="block text-sm font-medium text-white mb-1">Método de Pago</label>
+            <select
+              value={paymentForm.method}
+              onChange={(e) => setPaymentForm({ ...paymentForm, method: e.target.value })}
+              className="block w-full rounded-lg border border-[var(--border)] bg-[var(--input-bg)] text-[var(--text)] px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+            >
+              <option value="transfer">Transferencia</option>
+              <option value="cash">Efectivo</option>
+              <option value="card">Tarjeta</option>
+              <option value="other">Otro</option>
+            </select>
+          </div>
+          <Input 
+            label="Referencia (Opcional)" 
+            value={paymentForm.reference} 
+            onChange={(e) => setPaymentForm({ ...paymentForm, reference: e.target.value })} 
+            placeholder="Ej. #Ticket o Ref. Transferencia" 
+          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notas (Opcional)</label>
+            <textarea value={paymentForm.notes} onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })} rows={2} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setPaymentOpen(false)}>Cancelar</Button>
+            <Button type="submit" loading={actionLoading}>Registrar Pago</Button>
           </div>
         </form>
       </Modal>

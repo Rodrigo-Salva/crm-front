@@ -7,6 +7,8 @@ import { FilterBar } from '@/modules/shared/components/ui/filter-bar';
 import { api } from '@/modules/shared/services/api';
 import { Quote } from '@/modules/shared/types';
 import { formatCurrency } from '@/modules/shared/utils/format';
+import { BatchActionsBar } from '@/modules/shared/components/ui/batch-actions';
+import { useSelection } from '@/modules/shared/hooks/use-selection';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
   draft: { label: 'Borrador', variant: 'default' },
@@ -25,6 +27,8 @@ export default function QuotesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const sel = useSelection<Quote>();
+  const [batchLoading, setBatchLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,10 +50,18 @@ export default function QuotesPage() {
     try { await api.delete(`/quotes/${deleteId}`); setConfirmOpen(false); setDeleteId(null); load(); } catch (err) { console.error(err); } finally { setSaving(false); }
   };
 
+  const handleBatchDelete = async () => {
+    setBatchLoading(true);
+    try {
+      await Promise.all(Array.from(sel.selected).map((id) => api.delete(`/quotes/${id}`)));
+      sel.clear();
+      load();
+    } catch {} finally { setBatchLoading(false); }
+  };
+
   const columns = [
     { key: 'number', label: 'Número', render: (q: Quote) => <button onClick={() => router.push(`/quotes/${q.id}`)} className="font-mono font-medium hover:text-[var(--primary)] transition-colors">{q.number}</button> },
-    { key: 'contact', label: 'Cliente', render: (q: any) => <span className="font-medium">{q.contact?.name || '—'}</span> },
-    { key: 'deal', label: 'Negocio', render: (q: any) => <span className="text-[var(--text-secondary)]">{q.deal?.title || '—'}</span> },
+    { key: 'lead', label: 'Cliente', render: (q: any) => <span className="font-medium">{q.lead?.name || '—'}</span> },
     { key: 'grandTotal', label: 'Total', render: (q: Quote) => <span className="font-semibold">{formatCurrency(q.grandTotal, q.currency)}</span> },
     { key: 'status', label: 'Estado', render: (q: Quote) => { const cfg = statusConfig[q.status] || { label: q.status, variant: 'default' as const }; return <Badge variant={cfg.variant}>{cfg.label}</Badge>; }},
     { key: 'version', label: 'Versión', render: (q: Quote) => <span className="text-[var(--text-secondary)]">v{q.version}</span> },
@@ -64,7 +76,7 @@ export default function QuotesPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Cotizaciones" description="Gestiona tus cotizaciones y presupuestos" />
+      <PageHeader title="Cotizaciones" description="Gestiona tus cotizaciones y presupuestos" actions={<Button onClick={() => router.push('/quotes/create')}>+ Nueva Cotización</Button>} />
       <Card padding={false}>
         <div className="p-4 border-b border-[var(--border)]">
           <div className="flex items-center justify-between gap-4">
@@ -85,7 +97,10 @@ export default function QuotesPage() {
             />
           </div>
         </div>
-        {loading ? <Loading /> : <Table columns={columns} data={data} />}
+        {sel.selected.size > 0 && (
+          <BatchActionsBar count={sel.selected.size} onDelete={handleBatchDelete} onClear={sel.clear} loading={batchLoading} />
+        )}
+        {loading ? <Loading /> : <Table columns={columns} data={data} selected={sel.selected} onToggle={sel.toggle} onToggleAll={() => sel.toggleAll(data)} allSelected={sel.allSelected(data)} />}
       </Card>
 
       <ConfirmDialog open={confirmOpen} onClose={() => setConfirmOpen(false)} onConfirm={handleDelete} loading={saving} title="Eliminar Cotización" message="¿Estás seguro? Esta acción no se puede deshacer." />
