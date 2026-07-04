@@ -135,7 +135,7 @@ export default function TeamsPage() {
   return (
     <div className="animate-fade-in space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="Equipos" description="Gestiona los grupos de trabajo y sus miembros" />
+        <PageHeader backHref="/settings" backLabel="Volver a Configuración" title="Equipos" description="Gestiona los grupos de trabajo y sus miembros" />
         <Button onClick={() => setCreateOpen(true)}>Crear equipo</Button>
       </div>
 
@@ -158,7 +158,7 @@ export default function TeamsPage() {
                 <div className="flex items-center gap-1 ml-2 flex-shrink-0">
                   <button
                     onClick={() => openEdit(team)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--celeste-600)] hover:bg-gray-100 transition-colors"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--celeste-600)] hover:bg-[var(--sidebar-hover)] transition-colors"
                     title="Editar"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -167,7 +167,7 @@ export default function TeamsPage() {
                   </button>
                   <button
                     onClick={() => setDeleteTeamConfirm(team)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--danger)] hover:bg-red-50 transition-colors"
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--danger)] hover:bg-red-500/10 transition-colors"
                     title="Eliminar"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -179,8 +179,6 @@ export default function TeamsPage() {
 
               {team.stats && (
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mb-4 text-xs text-[var(--text-secondary)]">
-                  <span>Contactos: <strong className="text-[var(--text)]">{team.stats.contacts ?? 0}</strong></span>
-                  <span>Negocios: <strong className="text-[var(--text)]">{team.stats.deals ?? 0}</strong></span>
                   <span>Tickets: <strong className="text-[var(--text)]">{team.stats.tickets ?? 0}</strong></span>
                   <span>Tareas: <strong className="text-[var(--text)]">{team.stats.tasks ?? 0}</strong></span>
                   <span>Leads: <strong className="text-[var(--text)]">{team.stats.leads ?? 0}</strong></span>
@@ -203,7 +201,7 @@ export default function TeamsPage() {
                         </div>
                         <button
                           onClick={() => setRemoveMemberConfirm({ teamId: team.id, member })}
-                          className="p-1 rounded text-gray-300 hover:text-[var(--danger)] hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                          className="p-1 rounded text-gray-300 hover:text-[var(--danger)] hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
                           title="Quitar miembro"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -239,7 +237,7 @@ export default function TeamsPage() {
                         </Button>
                         <button
                           onClick={() => { setAddingToTeam(null); setSelectedUserId(''); }}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-[var(--text-muted)]"
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -285,30 +283,30 @@ export default function TeamsPage() {
             placeholder="Nombre del equipo"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Descripción</label>
             <textarea
               value={createDesc}
               onChange={(e) => setCreateDesc(e.target.value)}
               placeholder="Descripción del equipo"
               rows={3}
-              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] placeholder:text-gray-400 hover:border-[var(--celeste-400)] transition-all"
+              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] placeholder:text-gray-400 hover:border-[var(--celeste-400)] transition-all"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">
               Miembros ({createSelected.length} seleccionados)
             </label>
             <div className="max-h-48 overflow-y-auto space-y-1.5 border border-[var(--border)] rounded-lg p-2">
               {users.map((user: any) => (
                 <label
                   key={user.id}
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[var(--secondary)] cursor-pointer"
                 >
                   <input
                     type="checkbox"
                     checked={createSelected.includes(user.id)}
                     onChange={() => toggleCreateMember(user.id)}
-                    className="rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]"
+                    className="rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)]"
                   />
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--celeste-400)] to-[var(--celeste-600)] flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
                     {getInitials(user.name)}
@@ -342,13 +340,13 @@ export default function TeamsPage() {
             placeholder="Nombre del equipo"
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Descripción</label>
             <textarea
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
               placeholder="Descripción del equipo"
               rows={3}
-              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] placeholder:text-gray-400 hover:border-[var(--celeste-400)] transition-all"
+              className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] placeholder:text-gray-400 hover:border-[var(--celeste-400)] transition-all"
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
@@ -365,7 +363,7 @@ export default function TeamsPage() {
         onClose={() => setDeleteTeamConfirm(null)}
         onConfirm={handleDeleteTeam}
         title="Eliminar equipo"
-        message={`¿Estás seguro de que deseas eliminar "${deleteTeamConfirm?.name}"? Esta acción no se puede deshacer.`}
+        message={`Â¿Estás seguro de que deseas eliminar "${deleteTeamConfirm?.name}"? Esta acción no se puede deshacer.`}
         loading={actionLoading}
       />
 
@@ -374,10 +372,12 @@ export default function TeamsPage() {
         onClose={() => setRemoveMemberConfirm(null)}
         onConfirm={handleRemoveMember}
         title="Quitar miembro"
-        message={`¿Estás seguro de que deseas quitar a "${removeMemberConfirm?.member?.name}" del equipo?`}
+        message={`Â¿Estás seguro de que deseas quitar a "${removeMemberConfirm?.member?.name}" del equipo?`}
         confirmText="Quitar"
         loading={actionLoading}
       />
     </div>
   );
 }
+
+

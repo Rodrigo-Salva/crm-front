@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CRM Pro",
+  title: "Conecta",
   description: "Sistema de gestión de relaciones con clientes",
   manifest: "/manifest.json",
 };
@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="h-full bg-[var(--bg)]">
+      <body className="h-full bg-[var(--bg)] font-sans text-[var(--text)]">
         <Providers>{children}</Providers>
         <Toaster richColors position="bottom-right" />
       </body>

@@ -109,6 +109,7 @@ export function useAuth() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    api.post('/auth/logout', {}).catch(() => {});
   }, []);
 
   return { user, loading, error, login, register, logout, verify2FA, isAuthenticated: !!user };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { PageHeader, Card, Button, Loading } from '@/modules/shared';
+import { api } from '@/modules/shared/services/api';
 import { UserRole } from '@/modules/shared/types';
 import { Permission, ALL_PERMISSIONS, ROLE_LABELS, fetchRolePermissions, setRolePermission } from '@/modules/shared/services/permissions';
 
@@ -21,15 +22,32 @@ export default function RolesPage() {
   const [permissions, setPermissions] = useState<{ role: UserRole; permission: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [twoFactorRoles, setTwoFactorRoles] = useState<string[]>([]);
+  const [savingTwoFactor, setSavingTwoFactor] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const data = await fetchRolePermissions();
     setPermissions(data);
+    try {
+      const settings = await api.get<Record<string, string>>('/tenant-settings');
+      setTwoFactorRoles((settings.twoFactorRequiredRoles || '').split(',').map((r) => r.trim()).filter(Boolean));
+    } catch {}
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const toggleTwoFactorRole = async (role: UserRole, enabled: boolean) => {
+    setSavingTwoFactor(true);
+    const next = enabled ? [...twoFactorRoles, role] : twoFactorRoles.filter((r) => r !== role);
+    try {
+      await api.put('/tenant-settings', { twoFactorRequiredRoles: next.join(',') });
+      setTwoFactorRoles(next);
+    } finally {
+      setSavingTwoFactor(false);
+    }
+  };
 
   const toggle = async (role: UserRole, permission: string, enabled: boolean) => {
     const key = `${role}:${permission}`;
@@ -55,15 +73,15 @@ export default function RolesPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader
+      <PageHeader backHref="/settings" backLabel="Volver a Configuración"
         title="Roles y permisos"
         description="Activa o desactiva permisos por cada rol. Los cambios se guardan automáticamente."
       />
 
-      <div className="overflow-x-auto bg-white rounded-xl border border-[var(--border)] shadow-sm">
+      <div className="overflow-x-auto bg-[var(--card-bg)] rounded-xl border border-[var(--border)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[var(--border)] bg-gray-50/50">
+            <tr className="border-b border-[var(--border)] bg-[var(--secondary)]/50">
               <th className="text-left py-3 px-4 text-[var(--text-secondary)] font-medium">Permiso</th>
               {ROLES.map((r) => (
                 <th key={r} className="text-center py-3 px-4 text-[var(--text-secondary)] font-medium min-w-[120px]">
@@ -75,7 +93,7 @@ export default function RolesPage() {
           </thead>
           <tbody>
             {ALL_PERMISSIONS.map((perm) => (
-              <tr key={perm} className="border-b border-[var(--border)] hover:bg-gray-50/30">
+              <tr key={perm} className="border-b border-[var(--border)] hover:bg-[var(--secondary)]/30">
                 <td className="py-3 px-4 text-[var(--text)] font-medium">
                   {PERMISSION_LABELS[perm]}
                   <p className="text-xs text-[var(--text-secondary)] font-normal">{perm}</p>
@@ -104,7 +122,7 @@ export default function RolesPage() {
                           enabled ? 'bg-[var(--primary)]' : 'bg-gray-200'
                         } ${isSaving ? 'opacity-50' : ''}`}
                       >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-[var(--card-bg)] transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                     </td>
                   );
@@ -133,6 +151,29 @@ export default function RolesPage() {
           );
         })}
       </div>
+
+      <div className="mt-8 bg-[var(--card-bg)] rounded-xl border border-[var(--border)] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <h3 className="text-sm font-semibold text-[var(--text)] mb-1">2FA obligatorio</h3>
+        <p className="text-xs text-[var(--text-secondary)] mb-4">
+          Los roles marcados deberán configurar la autenticación de dos factores antes de poder usar el sistema.
+        </p>
+        <div className="flex flex-wrap gap-4">
+          {ROLES.map((role) => (
+            <label key={role} className="flex items-center gap-2 text-sm text-[var(--text)]">
+              <input
+                type="checkbox"
+                checked={twoFactorRoles.includes(role)}
+                disabled={savingTwoFactor}
+                onChange={(e) => toggleTwoFactorRole(role, e.target.checked)}
+                className="rounded border-[var(--border)]"
+              />
+              {ROLE_LABELS[role]}
+            </label>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
+

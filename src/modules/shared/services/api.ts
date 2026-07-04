@@ -18,12 +18,14 @@ class ApiClient {
       ...options?.headers,
     };
 
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers, credentials: 'include' });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
       const errorMessage = error.message || `HTTP ${response.status}`;
-      if (options?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase()) && !path.includes('/auth')) {
+      const method = options?.method?.toUpperCase() || 'GET';
+      console.error(`API error [${method} ${path}]:`, errorMessage);
+      if (!path.includes('/auth')) {
         toast.error(errorMessage);
       }
       throw new Error(errorMessage);

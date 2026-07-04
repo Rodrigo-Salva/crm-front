@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,8 @@ export default function LoginPage() {
       const res = await login({ email, password });
       if (res?.requires2FA) {
         router.push(`/2fa?userId=${res.userId}`);
+      } else if (res?.mustSetupTwoFactor) {
+        router.push('/settings/security?force=1');
       } else {
         router.push('/');
       }
@@ -43,12 +45,12 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col justify-center px-16 py-12 h-full">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-[var(--card-bg)] flex items-center justify-center shadow-lg">
               <svg className="w-6 h-6 text-[#0f172a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
-            <span className="text-white text-2xl font-bold tracking-tight">CRM Pro</span>
+            <span className="text-white text-2xl font-bold tracking-tight">Conecta</span>
           </div>
 
           <div className="space-y-6">
@@ -58,13 +60,13 @@ export default function LoginPage() {
               inteligencia
             </h2>
             <p className="text-gray-400 text-base leading-relaxed max-w-md">
-              La plataforma CRM todo-en-uno para automatizar ventas, gestionar contactos y cerrar más negocios.
+              La plataforma CRM todo-en-uno para automatizar ventas, gestionar contactos y cerrar mÃ¡s negocios.
             </p>
 
             <div className="space-y-4 pt-4">
               {[
                 { icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', text: 'Pipeline de ventas visual' },
-                { icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', text: 'Gestión de contactos y cuentas' },
+                { icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', text: 'GestiÃ³n de contactos y cuentas' },
                 { icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', text: 'Reportes y analytics en tiempo real' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -79,7 +81,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="mt-auto text-gray-500 text-xs">© 2026 CRM Pro. Todos los derechos reservados.</p>
+          <p className="mt-auto text-gray-500 text-xs">Â© 2026 Conecta. Todos los derechos reservados.</p>
         </div>
       </div>
 
@@ -89,15 +91,15 @@ export default function LoginPage() {
           <div className="text-center lg:hidden mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#0f172a] mb-4">
               <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-[var(--text)]">CRM Pro</h1>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">Inicia sesión en tu cuenta</p>
+            <h1 className="text-2xl font-bold text-[var(--text)]">Conecta</h1>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">Inicia sesiÃ³n en tu cuenta</p>
           </div>
 
           <div className="hidden lg:block mb-10">
-            <h1 className="text-2xl font-bold text-[var(--text)]">Iniciar Sesión</h1>
+            <h1 className="text-2xl font-bold text-[var(--text)]">Iniciar SesiÃ³n</h1>
             <p className="text-sm text-[var(--text-secondary)] mt-1">Ingresa tus credenciales para continuar</p>
           </div>
 
@@ -131,7 +133,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">ContraseÃ±a</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -142,7 +144,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   required
                   className="block w-full rounded-xl border border-gray-300 pl-10 pr-10 py-2.5 text-sm shadow-sm transition-all placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                 />
@@ -166,19 +168,19 @@ export default function LoginPage() {
             </div>
 
             <Button type="submit" loading={loading} className="w-full !rounded-xl !py-2.5">
-              Iniciar Sesión
+              Iniciar SesiÃ³n
             </Button>
             
             <div className="relative flex items-center py-2">
               <div className="flex-grow border-t border-gray-200"></div>
-              <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">O continúa con</span>
+              <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">O continÃºa con</span>
               <div className="flex-grow border-t border-gray-200"></div>
             </div>
 
             <button
               type="button"
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-all"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-[var(--card-bg)] px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2 transition-all"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -192,7 +194,7 @@ export default function LoginPage() {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-[var(--text-secondary)]">
-              ¿No tienes cuenta?{' '}
+              Â¿No tienes cuenta?{' '}
               <a href="/register" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold transition-colors">
                 Crear cuenta gratuita
               </a>
@@ -203,3 +205,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

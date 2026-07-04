@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -36,12 +36,12 @@ export default function RegisterPage() {
 
         <div className="relative z-10 flex flex-col justify-center px-16 py-12 h-full">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl bg-[var(--card-bg)] flex items-center justify-center shadow-lg">
               <svg className="w-6 h-6 text-[#0f172a]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
-            <span className="text-white text-2xl font-bold tracking-tight">CRM Pro</span>
+            <span className="text-white text-2xl font-bold tracking-tight">Conecta</span>
           </div>
 
           <div className="space-y-6">
@@ -50,14 +50,14 @@ export default function RegisterPage() {
               es <span className="text-blue-400">gratis</span>
             </h2>
             <p className="text-gray-400 text-base leading-relaxed max-w-md">
-              Únete a miles de equipos que ya usan CRM Pro para gestionar sus ventas.
+              Ãšnete a miles de equipos que ya usan Conecta para gestionar sus ventas.
             </p>
 
             <div className="space-y-4 pt-4">
               {[
-                { text: '14 días de prueba gratuita' },
-                { text: 'Sin tarjeta de crédito' },
-                { text: 'Todos los módulos incluidos' },
+                { text: '14 dÃ­as de prueba gratuita' },
+                { text: 'Sin tarjeta de crÃ©dito' },
+                { text: 'Todos los mÃ³dulos incluidos' },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -71,7 +71,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <p className="mt-auto text-gray-500 text-xs">© 2026 CRM Pro. Todos los derechos reservados.</p>
+          <p className="mt-auto text-gray-500 text-xs">Â© 2026 Conecta. Todos los derechos reservados.</p>
         </div>
       </div>
 
@@ -81,16 +81,16 @@ export default function RegisterPage() {
           <div className="text-center lg:hidden mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#0f172a] mb-4">
               <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-[var(--text)]">CRM Pro</h1>
+            <h1 className="text-2xl font-bold text-[var(--text)]">Conecta</h1>
             <p className="text-sm text-[var(--text-secondary)] mt-1">Crea tu cuenta gratuita</p>
           </div>
 
           <div className="hidden lg:block mb-10">
             <h1 className="text-2xl font-bold text-[var(--text)]">Crear Cuenta</h1>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">Comienza tu prueba gratuita de 14 días</p>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">Comienza tu prueba gratuita de 14 dÃ­as</p>
           </div>
 
           {error && (
@@ -142,7 +142,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">ContraseÃ±a</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,7 +153,7 @@ export default function RegisterPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   required
                   className="block w-full rounded-xl border border-gray-300 pl-10 pr-4 py-2.5 text-sm shadow-sm transition-all placeholder:text-gray-400 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                 />
@@ -186,9 +186,9 @@ export default function RegisterPage() {
 
           <div className="mt-8 text-center">
             <p className="text-sm text-[var(--text-secondary)]">
-              ¿Ya tienes cuenta?{' '}
+              Â¿Ya tienes cuenta?{' '}
               <a href="/login" className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold transition-colors">
-                Iniciar sesión
+                Iniciar sesiÃ³n
               </a>
             </p>
           </div>
@@ -197,3 +197,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

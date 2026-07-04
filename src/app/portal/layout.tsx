@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -8,6 +8,7 @@ const navLinks = [
   { href: '/portal', label: 'Dashboard' },
   { href: '/portal/tickets', label: 'Tickets' },
   { href: '/portal/quotes', label: 'Cotizaciones' },
+  { href: '/portal/contracts', label: 'Contratos' },
 ];
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
@@ -37,7 +38,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
-      <header className="bg-white border-b border-[var(--border)] px-6 py-3 flex items-center justify-between shadow-sm">
+      <header className="bg-[var(--card-bg)] border-b border-[var(--border)] px-6 py-3 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-6">
           <Link href="/portal" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-md bg-[var(--primary)] flex items-center justify-center">
@@ -76,7 +77,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             onClick={handleLogout}
             className="text-sm text-[var(--danger)] hover:text-red-700 font-medium transition-colors"
           >
-            Cerrar sesión
+            Cerrar sesiÃ³n
           </button>
         </div>
       </header>
@@ -84,3 +85,4 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     </div>
   );
 }
+
