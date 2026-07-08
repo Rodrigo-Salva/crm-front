@@ -5,7 +5,7 @@ import { Card, PageHeader, Button, Loading, DatePicker } from '@/modules/shared'
 import { api } from '@/modules/shared/services/api';
 import {
   ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell,
-  Tooltip, Legend, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, XAxis, YAxis, CartesianGrid, FunnelChart, Funnel, LabelList,
 } from 'recharts';
 
 const COLORS = ['#0070F3', '#7928CA', '#FF0080', '#00DFD8', '#F5A623', '#10B981', '#3291FF', '#E2E8F0'];
@@ -24,21 +24,24 @@ export default function ReportsPage() {
   const [dealsByStage, setDealsByStage] = useState<any[]>([]);
   const [activityBySeller, setActivityBySeller] = useState<any[]>([]);
   const [pipeline, setPipeline] = useState<any[]>([]);
+  const [funnel, setFunnel] = useState<{ stages: any[]; dropOff: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, dealsRes, activityRes, pipelineRes] = await Promise.all([
+      const [summaryRes, dealsRes, activityRes, pipelineRes, funnelRes] = await Promise.all([
         api.get<any>('/dashboard/summary'),
         api.get<any>('/dashboard/deals-by-stage'),
         api.get<any>(`/dashboard/activity-by-seller?from=${from}&to=${to}`),
         api.get<any>('/dashboard/pipeline'),
+        api.get<any>(`/dashboard/funnel?from=${from}&to=${to}`),
       ]);
       setSummary(summaryRes);
       setDealsByStage(Array.isArray(dealsRes) ? dealsRes : []);
       setActivityBySeller(Array.isArray(activityRes) ? activityRes : []);
       setPipeline(Array.isArray(pipelineRes) ? pipelineRes : []);
+      setFunnel(funnelRes);
     } catch { } finally { setLoading(false); }
   }, [from, to]);
 
@@ -173,6 +176,68 @@ export default function ReportsPage() {
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${s.percentage}%`, backgroundColor: s.color || 'var(--primary)' }} />
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <h3 className="text-base font-semibold text-[var(--text)] mb-4">Embudo de Conversión</h3>
+          {!funnel || funnel.stages.length === 0 ? (
+            <p className="text-[var(--text-secondary)] text-sm py-8 text-center">Sin datos</p>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <FunnelChart>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#0A0A0A', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Funnel data={funnel.stages} dataKey="entered" nameKey="name" isAnimationActive>
+                    {funnel.stages.map((s: any, i: number) => (
+                      <Cell key={i} fill={s.color || COLORS[i % COLORS.length]} />
+                    ))}
+                    <LabelList position="right" dataKey="name" fill="var(--text)" stroke="none" />
+                  </Funnel>
+                </FunnelChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </Card>
+
+        <Card>
+          <h3 className="text-base font-semibold text-[var(--text)] mb-4">Conversión y Tiempo por Etapa</h3>
+          {!funnel || funnel.stages.length === 0 ? (
+            <p className="text-[var(--text-secondary)] text-sm py-8 text-center">Sin datos</p>
+          ) : (
+            <div className="space-y-3">
+              {funnel.stages.map((s: any) => (
+                <div key={s.name} className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-[var(--text)]">{s.name}</span>
+                  <span className="text-[var(--text-secondary)]">
+                    {s.conversionRate !== null ? `${s.conversionRate}% avanza` : '—'}
+                    {' · '}
+                    {s.avgTimeInStageHours !== null ? `${s.avgTimeInStageHours}h promedio` : 'sin datos de tiempo'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Card>
+        <h3 className="text-base font-semibold text-[var(--text)] mb-4">Fugas (Leads Perdidos)</h3>
+        {!funnel || funnel.dropOff.length === 0 ? (
+          <p className="text-[var(--text-secondary)] text-sm py-8 text-center">Sin leads perdidos en este periodo</p>
+        ) : (
+          <div className="space-y-3">
+            {funnel.dropOff.map((d: any) => (
+              <div key={d.stage} className="flex items-center justify-between text-sm">
+                <span className="font-medium text-[var(--text)]">Desde &quot;{d.stage}&quot;</span>
+                <span className="text-[var(--text-secondary)]">{d.lostCount} lead(s) · ${d.lostValue.toLocaleString()}</span>
               </div>
             ))}
           </div>
