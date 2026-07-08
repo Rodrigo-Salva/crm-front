@@ -25,6 +25,13 @@ const priorityConfig: Record<string, { label: string; variant: 'default' | 'prim
   critical: { label: 'Crítica', variant: 'danger' },
 };
 
+function renderSlaBadge(deadline: string) {
+  const remainingHours = Math.round((new Date(deadline).getTime() - Date.now()) / 3600000);
+  if (remainingHours < 0) return <Badge variant="danger">Vencido</Badge>;
+  if (remainingHours <= 4) return <Badge variant="warning">{remainingHours}h restantes</Badge>;
+  return <Badge variant="success">{remainingHours}h restantes</Badge>;
+}
+
 const tabOptions = [
   { id: 'info', label: 'Información' },
   { id: 'activity', label: 'Actividad' },
@@ -163,8 +170,14 @@ export default function TicketDetailPage() {
                 </div>
                 {ticket.slaDeadline && (
                   <div className="p-4 rounded-xl bg-[var(--bg)]">
-                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">SLA</p>
-                    <p className="mt-1 text-sm font-medium text-[var(--text)]">{new Date(ticket.slaDeadline).toLocaleDateString()}</p>
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">SLA de resolución</p>
+                    <p className="mt-1">{renderSlaBadge(ticket.slaDeadline)}</p>
+                  </div>
+                )}
+                {ticket.firstResponseDeadline && !ticket.firstRespondedAt && (
+                  <div className="p-4 rounded-xl bg-[var(--bg)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">SLA de primera respuesta</p>
+                    <p className="mt-1">{renderSlaBadge(ticket.firstResponseDeadline)}</p>
                   </div>
                 )}
                 <div className="p-4 rounded-xl bg-[var(--bg)]">

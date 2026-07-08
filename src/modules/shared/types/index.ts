@@ -245,6 +245,8 @@ export interface Ticket {
   leadId?: string;
   assignedTo?: string;
   slaDeadline?: string;
+  firstResponseDeadline?: string;
+  firstRespondedAt?: string;
   customFields?: Record<string, any>;
   lead?: { id: string; name: string; email: string };
   assignee?: { id: string; name: string };

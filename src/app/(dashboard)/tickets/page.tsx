@@ -28,6 +28,7 @@ const emptyForm = { subject: '', description: '', status: 'open' as const, prior
 export default function TicketsPage() {
   const router = useRouter();
   const [data, setData] = useState<Ticket[]>([]);
+  const [slaById, setSlaById] = useState<Record<string, any>>({});
   const [filter, setFilter] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
@@ -52,8 +53,12 @@ export default function TicketsPage() {
       Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
       if (search) params.set('search', search);
       const qs = params.toString();
-      const res = await api.get<any>(`/tickets${qs ? `?${qs}` : ''}`);
+      const [res, slaRes] = await Promise.all([
+        api.get<any>(`/tickets${qs ? `?${qs}` : ''}`),
+        api.get<any[]>('/tickets/sla').catch(() => []),
+      ]);
       setData(Array.isArray(res) ? res : []);
+      setSlaById(Object.fromEntries((Array.isArray(slaRes) ? slaRes : []).map((s) => [s.id, s])));
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }, [filter, filters, search]);
 
@@ -106,6 +111,13 @@ export default function TicketsPage() {
     )},
     { key: 'priority', label: 'Prioridad', render: (t: Ticket) => { const cfg = priorityConfig[t.priority] || { label: t.priority, variant: 'default' as const }; return <Badge variant={cfg.variant}>{cfg.label}</Badge>; }},
     { key: 'status', label: 'Estado', render: (t: Ticket) => { const cfg = statusConfig[t.status] || { label: t.status, variant: 'default' as const }; return <Badge variant={cfg.variant}>{cfg.label}</Badge>; }},
+    { key: 'sla', label: 'SLA', render: (t: Ticket) => {
+      const sla = slaById[t.id];
+      if (!sla || sla.slaRemainingHours === null) return <span className="text-[var(--text-secondary)] text-xs">—</span>;
+      if (sla.slaBreached) return <Badge variant="danger">Vencido</Badge>;
+      if (sla.slaRemainingHours <= 4) return <Badge variant="warning">{sla.slaRemainingHours}h restantes</Badge>;
+      return <Badge variant="success">{sla.slaRemainingHours}h restantes</Badge>;
+    }},
     { key: 'assignee', label: 'Asignado', render: (t: any) => <span className="text-[var(--text-secondary)]">{t.assignee?.name || '—'}</span> },
     { key: '_count', label: 'Msgs', render: (t: any) => <span className="px-2 py-0.5 bg-gray-100 rounded-md text-sm">{t._count?.messages ?? 0}</span> },
     { key: 'createdAt', label: 'Creado', render: (t: Ticket) => <span className="text-[var(--text-secondary)]">{new Date(t.createdAt).toLocaleDateString()}</span> },
