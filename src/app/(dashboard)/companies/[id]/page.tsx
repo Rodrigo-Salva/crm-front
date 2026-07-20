@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, PageHeader, Loading, Card, Table, Modal, Input } from '@/modules/shared';
+import { Button, PageHeader, Loading, Card, Table, Modal, Input, TagList, DocumentCenter } from '@/modules/shared';
 import { Tabs } from '@/modules/shared/components/ui/tab';
 import { api } from '@/modules/shared/services/api';
 import { Company } from '@/modules/shared/types';
@@ -17,6 +17,7 @@ const tabOptions = [
   { id: 'activity', label: 'Actividad' },
   { id: 'notes', label: 'Notas' },
   { id: 'audit', label: 'Historial' },
+  { id: 'documents', label: 'Documentos' },
 ];
 
 const emptyForm = { name: '', industry: '', website: '', phone: '', address: '' };
@@ -155,6 +156,10 @@ export default function CompanyDetailPage() {
                 <p className="mt-1 text-sm font-medium text-[var(--text)]">{company.address || '—'}</p>
               </div>
               <div className="p-4 rounded-xl bg-[var(--bg)]">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">RUC</p>
+                <p className="mt-1 text-sm font-medium text-[var(--text)]">{company.ruc || '—'}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-[var(--bg)]">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Leads</p>
                 <p className="mt-1 text-sm font-medium text-[var(--text)]">{company.leads?.length ?? 0} leads</p>
               </div>
@@ -163,6 +168,10 @@ export default function CompanyDetailPage() {
                 <p className="mt-1 text-sm font-medium text-[var(--text)]">
                   {new Date(company.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
+              </div>
+              <div className="p-4 rounded-xl bg-[var(--bg)] md:col-span-2 lg:col-span-3">
+                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">Tags</p>
+                <TagList entity="company" entityId={company.id} />
               </div>
               {customFields.map((field) => (
                 <div key={field.name} className="p-4 rounded-xl bg-[var(--bg)]">
@@ -196,6 +205,10 @@ export default function CompanyDetailPage() {
 
           {activeTab === 'audit' && (
             <AuditTimeline entity="company" entityId={company.id} />
+          )}
+
+          {activeTab === 'documents' && (
+            <DocumentCenter entity="company" entityId={company.id} />
           )}
         </div>
       </Card>

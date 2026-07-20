@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, PageHeader, Card, Table, Badge, SearchInput, Loading, EmptyState, HealthBadge } from '@/modules/shared';
+import { Button, PageHeader, Card, Table, Badge, SearchInput, Loading, EmptyState, HealthBadge, SavedViewsBar, ExportButton } from '@/modules/shared';
 import { Tabs } from '@/modules/shared/components/ui/tab';
 import { Modal } from '@/modules/shared';
 import { api } from '@/modules/shared/services/api';
@@ -41,6 +41,8 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [customerStatusFilter, setCustomerStatusFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
+  const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
   const [stages, setStages] = useState<PipelineStageOption[]>([]);
 
   const sel = useSelection<Lead>();
@@ -52,6 +54,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     api.get<PipelineStageOption[]>('/pipeline-stages').then((res) => setStages(Array.isArray(res) ? res : [])).catch(() => {});
+    api.get<{ id: string; name: string }[]>('/tags').then((res) => setTags(Array.isArray(res) ? res : [])).catch(() => {});
   }, []);
 
   const load = useCallback(async () => {
@@ -62,6 +65,7 @@ export default function LeadsPage() {
       if (statusFilter) params.set('status', statusFilter);
       if (sourceFilter) params.set('source', sourceFilter);
       if (customerStatusFilter) params.set('customerStatus', customerStatusFilter);
+      if (tagFilter) params.set('tagId', tagFilter);
       const res = await api.get<any>(`/leads?${params}`);
       setData(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
@@ -69,7 +73,7 @@ export default function LeadsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, sourceFilter, customerStatusFilter]);
+  }, [search, statusFilter, sourceFilter, customerStatusFilter, tagFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -130,7 +134,24 @@ export default function LeadsPage() {
       <PageHeader
         title="Leads"
         description="Gestiona el ciclo de vida completo de tus leads, de prospecto a venta"
-        actions={<Button onClick={() => router.push('/leads/create')}>+ Nuevo Lead</Button>}
+        actions={
+          <div className="flex gap-2">
+            <ExportButton 
+              data={data} 
+              filename="leads" 
+              columns={[
+                { key: 'name', label: 'Nombre' },
+                { key: 'email', label: 'Email' },
+                { key: 'company', label: 'Empresa', format: (v) => v || '' },
+                { key: 'status', label: 'Etapa' },
+                { key: 'score', label: 'Puntaje' },
+                { key: 'value', label: 'Valor', format: (v) => v ? v.toString() : '' },
+                { key: 'createdAt', label: 'Fecha de Creación', format: (v) => new Date(v).toLocaleDateString() }
+              ]}
+            />
+            <Button onClick={() => router.push('/leads/create')}>+ Nuevo Lead</Button>
+          </div>
+        }
       />
       <Tabs tabs={[{ id: 'tabla', label: 'Tabla' }, { id: 'kanban', label: 'Kanban' }]} active={view} onChange={setView} />
       {view === 'kanban' ? (
@@ -169,8 +190,26 @@ export default function LeadsPage() {
                 <option value="qualified">Calificado</option>
                 <option value="lost">Perdido</option>
               </select>
+              <select
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value)}
+                className="block rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+              >
+                <option value="">Todos los tags</option>
+                {tags.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
           </div>
+          <SavedViewsBar
+            entity="lead"
+            currentFilters={{ search, status: statusFilter, source: sourceFilter, customerStatus: customerStatusFilter }}
+            onApply={(f) => {
+              setSearch(f.search || '');
+              setStatusFilter(f.status || '');
+              setSourceFilter(f.source || '');
+              setCustomerStatusFilter(f.customerStatus || '');
+            }}
+          />
         </div>
         {sel.selected.size > 0 && (
           <BatchActionsBar count={sel.selected.size} onDelete={handleBatchDelete} onClear={sel.clear} onEdit={() => { setBatchStatus(''); setBatchEditOpen(true); }} loading={batchLoading} />

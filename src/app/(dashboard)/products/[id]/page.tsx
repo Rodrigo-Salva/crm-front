@@ -77,7 +77,7 @@ export default function ProductDetailPage() {
               </div>
               <div className="p-4 rounded-xl bg-[var(--bg)]">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Categoría</p>
-                <p className="mt-1 text-sm font-medium text-[var(--text)]">{product.category || '—'}</p>
+                <p className="mt-1 text-sm font-medium text-[var(--text)]">{product.category?.name || '—'}</p>
               </div>
               <div className="p-4 rounded-xl bg-[var(--bg)]">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">SKU</p>

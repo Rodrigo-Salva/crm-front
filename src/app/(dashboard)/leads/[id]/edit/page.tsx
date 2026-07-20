@@ -12,6 +12,7 @@ const sourceOptions = ['web', 'referral', 'phone', 'email', 'event', 'partner', 
 interface PipelineStageOption {
   id: string;
   name: string;
+  subPhases?: { id: string; name: string }[];
 }
 
 interface CampaignOption {
@@ -31,7 +32,7 @@ export default function EditLeadPage() {
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [careers, setCareers] = useState<any[]>([]);
   const [modalities, setModalities] = useState<any[]>([]);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: '', notes: '', value: 0, currency: 'MXN' as Currency, expectedCloseDate: '', companyId: '', companyName: '', position: '', customerStatus: '', campaignId: '', careerId: '', modalityId: '', utmSource: '', utmMedium: '', utmCampaign: '', utmTerm: '', utmContent: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: '', subPhaseId: '', notes: '', value: 0, currency: 'MXN' as Currency, expectedCloseDate: '', companyId: '', companyName: '', position: '', customerStatus: '', campaignId: '', careerId: '', modalityId: '', utmSource: '', utmMedium: '', utmCampaign: '', utmTerm: '', utmContent: '', referredByLeadId: '', isPartner: false });
 
   useEffect(() => {
     api.get<PipelineStageOption[]>('/pipeline-stages').then((res) => setStages(Array.isArray(res) ? res : [])).catch(() => {});
@@ -46,13 +47,15 @@ export default function EditLeadPage() {
       setLead(res);
       setForm({
         name: res.name, email: res.email || '', phone: res.phone || '', company: res.company || '',
-        source: res.source, status: res.status, notes: res.notes || '',
+        source: res.source, status: res.status, subPhaseId: res.subPhaseId || '', notes: res.notes || '',
         value: res.value || 0, currency: res.currency || 'MXN', expectedCloseDate: res.expectedCloseDate || '',
         companyId: res.companyId || '', companyName: res.companyName || '', position: res.position || '',
         customerStatus: res.customerStatus || '', campaignId: res.campaignId || '',
         careerId: res.careerId || '', modalityId: res.modalityId || '',
         utmSource: res.utmSource || '', utmMedium: res.utmMedium || '', utmCampaign: res.utmCampaign || '',
         utmTerm: res.utmTerm || '', utmContent: res.utmContent || '',
+        referredByLeadId: res.referredByLeadId || '',
+        isPartner: res.isPartner || false,
       });
     } catch {} finally { setLoading(false); }
   }, [id]);
@@ -72,11 +75,14 @@ export default function EditLeadPage() {
         campaignId: form.campaignId || undefined,
         careerId: form.careerId || undefined,
         modalityId: form.modalityId || undefined,
+        subPhaseId: form.subPhaseId || null,
         utmSource: form.utmSource || undefined,
         utmMedium: form.utmMedium || undefined,
         utmCampaign: form.utmCampaign || undefined,
         utmTerm: form.utmTerm || undefined,
         utmContent: form.utmContent || undefined,
+        referredByLeadId: form.referredByLeadId || undefined,
+        isPartner: form.isPartner,
       });
       router.push(`/leads/${id}`);
     } catch {} finally { setSaving(false); }
@@ -106,10 +112,24 @@ export default function EditLeadPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Etapa</label>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value, subPhaseId: '' })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
                 {stages.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
               </select>
             </div>
+            {(() => {
+              const currentStage = stages.find((s) => s.name === form.status);
+              const subPhases = currentStage?.subPhases || [];
+              if (subPhases.length === 0) return null;
+              return (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Sub-fase (opcional)</label>
+                  <select value={form.subPhaseId} onChange={(e) => setForm({ ...form, subPhaseId: e.target.value })} className="block w-full rounded-lg border border-[var(--border)] px-3 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]">
+                    <option value="">Sin sub-fase</option>
+                    {subPhases.map((sp) => <option key={sp.id} value={sp.id}>{sp.name}</option>)}
+                  </select>
+                </div>
+              );
+            })()}
             <Input label="Valor estimado" type="number" step="0.01" value={String(form.value)} onChange={(e) => setForm({ ...form, value: Number(e.target.value) })} placeholder="0.00" />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Moneda</label>
@@ -119,6 +139,11 @@ export default function EditLeadPage() {
             </div>
             <Input label="Fecha cierre estimada" type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} />
             <SearchSelect label="Empresa vinculada (opcional)" value={form.companyId} onChange={(id) => setForm({ ...form, companyId: id })} endpoint="/companies" placeholder="Buscar empresa por nombre..." />
+            <SearchSelect label="Referido por (opcional)" value={form.referredByLeadId} onChange={(id) => setForm({ ...form, referredByLeadId: id })} endpoint="/leads" placeholder="Buscar lead/cliente que lo refirió..." />
+            <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)] col-span-2">
+              <input type="checkbox" checked={form.isPartner} onChange={(e) => setForm({ ...form, isPartner: e.target.checked })} />
+              Es partner/revendedor (ve sus referidos en el portal de cliente)
+            </label>
             <Input label="Nombre de empresa (libre)" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} placeholder="Si no está en el catálogo" />
             <Input label="Cargo / Posición" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Ej. Gerente de compras" />
             <div>

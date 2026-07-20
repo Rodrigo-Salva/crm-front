@@ -145,6 +145,7 @@ export function LeadsKanbanBoard() {
                           }`}
                         >
                           <h4 className="text-sm font-semibold text-[var(--text)]">{lead.name}</h4>
+                          {lead.subPhase && <p className="text-[11px] text-[var(--primary)] mt-0.5">{lead.subPhase.name}</p>}
                           {lead.value > 0 && <p className="text-sm font-bold text-[var(--text)] mt-1.5">{formatCurrency(lead.value, lead.currency)}</p>}
                           {(lead.account?.name || lead.companyName || lead.company) && (
                             <p className="text-xs text-[var(--text-secondary)] mt-1">{lead.account?.name || lead.companyName || lead.company}</p>

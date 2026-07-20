@@ -13,3 +13,7 @@ export { Modal } from './modal';
 export { ConfirmDialog } from './confirm-dialog';
 export { SearchSelect } from './search-select';
 export { HealthBadge } from './health-badge';
+export { SavedViewsBar } from './saved-views-bar';
+export { TagList } from './tag-list';
+export { DocumentCenter } from './document-center';
+export { ExportButton } from './export-button';

@@ -6,6 +6,7 @@ import { useAuth } from '@/modules/shared/hooks/useAuth';
 import { api } from '@/modules/shared/services/api';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
 } from 'recharts';
 
 export default function DashboardPage() {
@@ -16,13 +17,15 @@ export default function DashboardPage() {
   const [monthlyActivity, setMonthlyActivity] = useState<any[]>([]);
   const [salesGoals, setSalesGoals] = useState<any[]>([]);
   const [mrrArr, setMrrArr] = useState<{ mrr: Record<string, number>; arr: Record<string, number>; activeSubscriptions: number } | null>(null);
+  const [accountHealth, setAccountHealth] = useState<{ counts: { healthy: number; at_risk: number; critical: number }; averageScore: number | null } | null>(null);
+  const [npsStats, setNpsStats] = useState<{ total: number; promoters: number; passives: number; detractors: number; nps: number | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, pipelineRes, forecastRes, dealsRes, activityRes, goalsRes, mrrRes] = await Promise.all([
+      const [summaryRes, pipelineRes, forecastRes, dealsRes, activityRes, goalsRes, mrrRes, healthRes, npsRes] = await Promise.all([
         api.get<any>('/dashboard/summary'),
         api.get<any>('/dashboard/pipeline'),
         api.get<any>('/dashboard/forecast?months=3'),
@@ -30,6 +33,8 @@ export default function DashboardPage() {
         api.get<any>('/dashboard/monthly-activity?months=6'),
         api.get<any>('/sales-goals'),
         api.get<any>('/dashboard/mrr'),
+        api.get<any>('/dashboard/account-health'),
+        api.get<any>('/dashboard/nps'),
       ]);
       setSummary(summaryRes);
       setPipeline(Array.isArray(pipelineRes) ? pipelineRes : []);
@@ -38,6 +43,8 @@ export default function DashboardPage() {
       setMonthlyActivity(Array.isArray(activityRes) ? activityRes : []);
       setSalesGoals(Array.isArray(goalsRes) ? goalsRes : []);
       setMrrArr(mrrRes ?? null);
+      setAccountHealth(healthRes ?? null);
+      setNpsStats(npsRes ?? null);
     } catch { } finally { setLoading(false); }
   }, []);
 
@@ -134,6 +141,58 @@ export default function DashboardPage() {
             <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
               <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider font-semibold mb-1">ARR (anual)</p>
               <p className="text-2xl font-bold text-white">{formatMrr(arrValue)}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {accountHealth && (
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-white font-semibold text-lg">Salud de Cuentas</span>
+            {accountHealth.averageScore != null && (
+              <span className="text-xs text-[var(--text-secondary)]">Promedio: {Math.round(accountHealth.averageScore)}</span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-emerald-500 uppercase tracking-wider font-semibold mb-1">Saludables</p>
+              <p className="text-2xl font-bold text-white">{accountHealth.counts.healthy}</p>
+            </div>
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-amber-500 uppercase tracking-wider font-semibold mb-1">En riesgo</p>
+              <p className="text-2xl font-bold text-white">{accountHealth.counts.at_risk}</p>
+            </div>
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-red-500 uppercase tracking-wider font-semibold mb-1">Críticas</p>
+              <p className="text-2xl font-bold text-white">{accountHealth.counts.critical}</p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {npsStats && npsStats.total > 0 && (
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <span className="text-white font-semibold text-lg">NPS</span>
+            <span className="text-xs text-[var(--text-secondary)]">{npsStats.total} respuesta(s)</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider font-semibold mb-1">Score</p>
+              <p className="text-2xl font-bold text-white">{npsStats.nps ?? '—'}</p>
+            </div>
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-emerald-500 uppercase tracking-wider font-semibold mb-1">Promotores</p>
+              <p className="text-2xl font-bold text-white">{npsStats.promoters}</p>
+            </div>
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-amber-500 uppercase tracking-wider font-semibold mb-1">Pasivos</p>
+              <p className="text-2xl font-bold text-white">{npsStats.passives}</p>
+            </div>
+            <div className="bg-[var(--secondary)] rounded-xl p-4 border border-[var(--border)]">
+              <p className="text-xs text-red-500 uppercase tracking-wider font-semibold mb-1">Detractores</p>
+              <p className="text-2xl font-bold text-white">{npsStats.detractors}</p>
             </div>
           </div>
         </Card>
@@ -278,29 +337,44 @@ export default function DashboardPage() {
 
         <Card className="col-span-1 p-6">
           <div className="flex justify-between items-center mb-6">
-            <span className="text-white font-semibold text-lg">Negocios por Etapa</span>
+            <span className="text-white font-semibold text-lg">Distribución de Leads</span>
             <button className="text-[var(--text-secondary)] hover:text-white">...</button>
           </div>
-          <div className="space-y-4">
+          <div className="h-72">
             {dealsByStage.length === 0 ? (
-              <p className="text-[var(--text-secondary)] text-sm py-4 text-center">Sin datos</p>
+              <div className="h-full flex items-center justify-center text-[var(--text-secondary)] text-sm">Sin datos</div>
             ) : (
-              dealsByStage.map((s: any, idx) => (
-                <div key={idx} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[var(--sidebar-hover)] flex items-center justify-center text-xs text-white border border-[var(--border)]">
-                      {s.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm text-white font-medium">{s.name}</p>
-                      <p className="text-xs text-[var(--text-secondary)]">{s.count} Negocios</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-[var(--success)] font-medium">{(s.count * 1.5).toFixed(1)}k</p>
-                  </div>
-                </div>
-              ))
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={dealsByStage}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="count"
+                    nameKey="name"
+                    stroke="none"
+                  >
+                    {dealsByStage.map((entry, index) => {
+                      const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0A0A0A', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Legend 
+                    layout="horizontal" 
+                    verticalAlign="bottom" 
+                    align="center"
+                    iconType="circle"
+                    formatter={(value) => <span className="text-[var(--text-secondary)] text-xs">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             )}
           </div>
         </Card>

@@ -136,6 +136,26 @@ export default function QuoteDetailPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/quotes/${id}/pdf`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Cotizacion-${quote?.number || id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   if (loading) return <Loading />;
   if (!quote) return (
     <div className="text-center py-20">
@@ -183,6 +203,10 @@ export default function QuoteDetailPage() {
         </div>
         <div className="flex items-center gap-2">
            <p className="text-2xl font-bold text-[var(--text)] mr-4">{formatCurrency(quote.grandTotal, quote.currency)}</p>
+          <Button variant="secondary" onClick={handleDownloadPdf}>
+            <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+            Descargar PDF
+          </Button>
           {(quote.status === 'sent' || quote.status === 'approved') && (
             <Button onClick={handlePay} loading={paying} className="bg-indigo-600 hover:bg-indigo-700">
               <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">

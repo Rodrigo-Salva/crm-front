@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Table, SearchInput, PageHeader, Loading, Card, Badge, Modal, ConfirmDialog, Input } from '@/modules/shared';
+import { Button, Table, SearchInput, PageHeader, Loading, Card, Badge, Modal, ConfirmDialog, Input, ExportButton } from '@/modules/shared';
 import { FilterBar } from '@/modules/shared/components/ui/filter-bar';
 import { api } from '@/modules/shared/services/api';
 import { Product } from '@/modules/shared/types';
@@ -10,11 +10,12 @@ import { formatCurrency, CURRENCIES } from '@/modules/shared/utils/format';
 import { BatchActionsBar } from '@/modules/shared/components/ui/batch-actions';
 import { useSelection } from '@/modules/shared/hooks/use-selection';
 
-const emptyForm = { name: '', description: '', price: 0, unit: '', category: '', sku: '', active: true, currency: 'MXN' };
+const emptyForm = { name: '', description: '', price: 0, unit: '', categoryId: '', sku: '', active: true, currency: 'MXN', type: 'physical', billingType: 'one_time', trackStock: false, stock: 0 };
 
 export default function ProductsPage() {
   const router = useRouter();
   const [data, setData] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -34,18 +35,22 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.set('category', search);
+      if (search) params.set('categoryId', search);
       Object.entries(filters).forEach(([k, v]) => { if (v) params.set(k, v); });
       const qs = params.toString();
-      const res = await api.get<any>(`/products${qs ? `?${qs}` : ''}`);
+      const [res, cats] = await Promise.all([
+        api.get<any>(`/products${qs ? `?${qs}` : ''}`),
+        api.get<any>('/product-categories')
+      ]);
       setData(Array.isArray(res) ? res : []);
+      setCategories(Array.isArray(cats) ? cats : []);
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }, [search, filters]);
 
   useEffect(() => { load() }, [load]);
 
   const openCreate = () => { setEditId(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (item: Product) => { setEditId(item.id); setForm({ name: item.name, description: item.description || '', price: item.price, unit: item.unit, category: item.category || '', sku: item.sku || '', active: item.active, currency: item.currency }); setModalOpen(true); };
+  const openEdit = (item: Product) => { setEditId(item.id); setForm({ name: item.name, description: item.description || '', price: item.price, unit: item.unit, categoryId: item.categoryId || '', sku: item.sku || '', active: item.active, currency: item.currency, type: item.type || 'physical', billingType: item.billingType || 'one_time', trackStock: item.trackStock || false, stock: item.stock || 0 }); setModalOpen(true); };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -89,7 +94,7 @@ export default function ProductsPage() {
       </button>
     )},
     { key: 'sku', label: 'SKU', render: (p: Product) => <span className="text-[var(--text-secondary)]">{p.sku || '—'}</span> },
-    { key: 'category', label: 'Categoría', render: (p: Product) => p.category || '—' },
+    { key: 'category', label: 'Categoría', render: (p: Product) => p.category?.name || '—' },
     { key: 'price', label: 'Precio', render: (p: Product) => <span className="font-semibold">{formatCurrency(p.price, p.currency)}</span> },
     { key: 'unit', label: 'Unidad', render: (p: Product) => <span className="text-[var(--text-secondary)]">{p.unit}</span> },
     { key: 'active', label: 'Estado', render: (p: Product) => p.active ? <Badge variant="success">Activo</Badge> : <Badge variant="default">Inactivo</Badge> },
@@ -104,7 +109,26 @@ export default function ProductsPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Productos" description="Catálogo de productos y servicios" actions={<Button onClick={openCreate}>+ Nuevo Producto</Button>} />
+      <PageHeader 
+        title="Productos" 
+        description="Catálogo de productos y servicios" 
+        actions={
+          <div className="flex gap-2">
+            <ExportButton 
+              data={data} 
+              filename="productos" 
+              columns={[
+                { key: 'name', label: 'Nombre' },
+                { key: 'sku', label: 'SKU', format: (v) => v || '' },
+                { key: 'price', label: 'Precio', format: (v) => v ? v.toString() : '' },
+                { key: 'unit', label: 'Unidad', format: (v) => v || '' },
+                { key: 'active', label: 'Estado', format: (v) => v ? 'Activo' : 'Inactivo' }
+              ]}
+            />
+            <Button onClick={openCreate}>+ Nuevo Producto</Button>
+          </div>
+        } 
+      />
       <Card padding={false}>
         <div className="p-4 border-b border-[var(--border)] space-y-3">
           <div className="flex items-center justify-between gap-4">
@@ -141,7 +165,41 @@ export default function ProductsPage() {
               </select>
             </div>
             <Input label="Unidad" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} required placeholder="Ej: pieza, hora, licencia" />
-            <Input label="Categoría" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ej: Software" />
+            <div>
+              <label className="block text-sm font-medium mb-1">Categoría</label>
+              <select className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}>
+                <option value="">Sin categoría</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Tipo de Producto</label>
+              <select className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}>
+                <option value="physical">Físico</option>
+                <option value="digital">Digital</option>
+                <option value="service">Servicio</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Tipo de Facturación</label>
+              <select className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" value={form.billingType} onChange={e => setForm({ ...form, billingType: e.target.value })}>
+                <option value="one_time">Única vez</option>
+                <option value="recurring">Recurrente (Suscripción)</option>
+              </select>
+            </div>
+            {form.type === 'physical' && (
+              <div className="col-span-2 grid grid-cols-2 gap-4 bg-[var(--sidebar-hover)] p-4 rounded-lg border border-[var(--border)]">
+                <div className="flex items-end h-full mb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={form.trackStock} onChange={(e) => setForm({ ...form, trackStock: e.target.checked })} className="w-4 h-4 rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] bg-transparent" />
+                    <span className="text-sm font-medium">Controlar inventario</span>
+                  </label>
+                </div>
+                {form.trackStock && (
+                  <Input label="Stock Actual" type="number" value={String(form.stock)} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} required placeholder="0" />
+                )}
+              </div>
+            )}
             <div className="flex items-end">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="w-4 h-4 rounded border-gray-300 text-[var(--primary)] focus:ring-[var(--primary)]" />

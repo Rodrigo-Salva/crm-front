@@ -18,6 +18,7 @@ export const OPERATORS = [
 
 export const ACTION_TYPES = [
   { value: 'assign_round_robin', label: 'Asignación round robin' },
+  { value: 'assign_workload', label: 'Asignar por carga de trabajo' },
   { value: 'create_task', label: 'Crear tarea' },
   { value: 'change_stage', label: 'Cambiar etapa' },
   { value: 'notify', label: 'Notificar' },

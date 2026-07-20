@@ -26,7 +26,7 @@ export default function CreateLeadPage() {
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([]);
   const [careers, setCareers] = useState<any[]>([]);
   const [modalities, setModalities] = useState<any[]>([]);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: '', notes: '', value: 0, currency: 'MXN' as Currency, expectedCloseDate: '', companyId: '', companyName: '', position: '', customerStatus: '', campaignId: '', careerId: '', modalityId: '', utmSource: '', utmMedium: '', utmCampaign: '', utmTerm: '', utmContent: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', source: 'web', status: '', notes: '', value: 0, currency: 'MXN' as Currency, expectedCloseDate: '', companyId: '', companyName: '', position: '', customerStatus: '', campaignId: '', careerId: '', modalityId: '', utmSource: '', utmMedium: '', utmCampaign: '', utmTerm: '', utmContent: '', referredByLeadId: '' });
 
   useEffect(() => {
     api.get<PipelineStageOption[]>('/pipeline-stages').then((res) => {
@@ -63,6 +63,7 @@ export default function CreateLeadPage() {
         utmCampaign: form.utmCampaign || undefined,
         utmTerm: form.utmTerm || undefined,
         utmContent: form.utmContent || undefined,
+        referredByLeadId: form.referredByLeadId || undefined,
       });
       router.push(`/leads/${res.id}`);
     } catch {} finally { setSaving(false); }
@@ -102,6 +103,7 @@ export default function CreateLeadPage() {
             </div>
             <Input label="Fecha cierre estimada" type="date" value={form.expectedCloseDate} onChange={(e) => setForm({ ...form, expectedCloseDate: e.target.value })} />
             <SearchSelect label="Empresa vinculada (opcional)" value={form.companyId} onChange={(id) => setForm({ ...form, companyId: id })} endpoint="/companies" placeholder="Buscar empresa por nombre..." />
+            <SearchSelect label="Referido por (opcional)" value={form.referredByLeadId} onChange={(id) => setForm({ ...form, referredByLeadId: id })} endpoint="/leads" placeholder="Buscar lead/cliente que lo refirió..." />
             <Input label="Nombre de empresa (libre)" value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} placeholder="Si no está en el catálogo" />
             <Input label="Cargo / Posición" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Ej. Gerente de compras" />
             <div>

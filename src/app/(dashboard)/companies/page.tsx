@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Table, Pagination, SearchInput, PageHeader, Loading, Card, Modal, ConfirmDialog, Input } from '@/modules/shared';
+import { Button, Table, Pagination, SearchInput, PageHeader, Loading, Card, Modal, ConfirmDialog, Input, SavedViewsBar, ExportButton } from '@/modules/shared';
 import { FilterBar } from '@/modules/shared/components/ui/filter-bar';
 import { api } from '@/modules/shared/services/api';
 import { Company } from '@/modules/shared/types';
 import { BatchActionsBar } from '@/modules/shared/components/ui/batch-actions';
 import { useSelection } from '@/modules/shared/hooks/use-selection';
 
-const emptyForm = { name: '', industry: '', website: '', phone: '', address: '' };
+const emptyForm = { name: '', industry: '', website: '', phone: '', address: '', ruc: '' };
 
 export default function CompaniesPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function CompaniesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -46,8 +47,12 @@ export default function CompaniesPage() {
 
   useEffect(() => { load() }, [load]);
 
+  useEffect(() => {
+    api.get<{ id: string; name: string }[]>('/tags').then((res) => setTags(Array.isArray(res) ? res : [])).catch(() => {});
+  }, []);
+
   const openCreate = () => { setEditId(null); setForm(emptyForm); setModalOpen(true); };
-  const openEdit = (item: Company) => { setEditId(item.id); setForm({ name: item.name, industry: item.industry || '', website: item.website || '', phone: item.phone || '', address: item.address || '' }); setModalOpen(true); };
+  const openEdit = (item: Company) => { setEditId(item.id); setForm({ name: item.name, industry: item.industry || '', website: item.website || '', phone: item.phone || '', address: item.address || '', ruc: item.ruc || '' }); setModalOpen(true); };
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -106,7 +111,26 @@ export default function CompaniesPage() {
 
   return (
     <div className="animate-fade-in">
-      <PageHeader title="Empresas" description="Gestiona tus cuentas y organizaciones" actions={<Button onClick={openCreate}>+ Nueva Empresa</Button>} />
+      <PageHeader 
+        title="Empresas" 
+        description="Gestiona tus cuentas y organizaciones" 
+        actions={
+          <div className="flex gap-2">
+            <ExportButton 
+              data={data} 
+              filename="empresas" 
+              columns={[
+                { key: 'name', label: 'Nombre' },
+                { key: 'industry', label: 'Industria', format: (v) => v || '' },
+                { key: 'website', label: 'Sitio Web', format: (v) => v || '' },
+                { key: 'phone', label: 'Teléfono', format: (v) => v || '' },
+                { key: 'createdAt', label: 'Fecha de Creación', format: (v) => new Date(v).toLocaleDateString() }
+              ]}
+            />
+            <Button onClick={openCreate}>+ Nueva Empresa</Button>
+          </div>
+        } 
+      />
       <Card padding={false}>
         <div className="p-4 border-b border-[var(--border)] space-y-3">
           <div className="flex items-center justify-between gap-4">
@@ -115,12 +139,23 @@ export default function CompaniesPage() {
               fields={[
                 { key: 'dateFrom', label: 'Desde', type: 'date' },
                 { key: 'dateTo', label: 'Hasta', type: 'date' },
+                { key: 'tagId', label: 'Tag', type: 'select', options: tags.map((t) => ({ value: t.id, label: t.name })) },
               ]}
               values={filters}
               onChange={(v) => { setFilters(v); setPage(1) }}
               onClear={() => { setFilters({}); setPage(1) }}
             />
           </div>
+          <SavedViewsBar
+            entity="company"
+            currentFilters={{ ...filters, search }}
+            onApply={(f) => {
+              const { search: s, ...rest } = f;
+              setSearch(s || '');
+              setFilters(rest);
+              setPage(1);
+            }}
+          />
         </div>
         {sel.selected.size > 0 && (
           <BatchActionsBar count={sel.selected.size} onDelete={handleBatchDelete} onClear={sel.clear} onEdit={() => { setBatchStatus(''); setBatchEditOpen(true); }} loading={batchLoading} />
@@ -136,6 +171,7 @@ export default function CompaniesPage() {
             <Input label="Sitio web" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://ejemplo.com" />
             <Input label="Teléfono" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+52 555 123 4567" />
             <Input label="Dirección" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Dirección completa" />
+            <Input label="RUC" value={form.ruc} onChange={(e) => setForm({ ...form, ruc: e.target.value })} placeholder="20123456789" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" type="button" onClick={() => setModalOpen(false)}>Cancelar</Button>

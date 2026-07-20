@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, PageHeader, Card, Loading, Badge, Modal, Input, HealthBadge } from '@/modules/shared';
+import { Button, PageHeader, Card, Loading, Badge, Modal, Input, HealthBadge, TagList, DocumentCenter } from '@/modules/shared';
 import { PlaybookRunsList } from '@/modules/playbooks/components/playbook-runs-list';
 import { Tabs } from '@/modules/shared/components/ui/tab';
 import { api } from '@/modules/shared/services/api';
@@ -32,6 +32,7 @@ const tabOptions = [
   { id: 'notes', label: 'Notas' },
   { id: 'audit', label: 'Historial' },
   { id: 'files', label: 'Archivos' },
+  { id: 'documents', label: 'Documentos' },
   { id: 'playbooks', label: 'Playbooks' },
 ];
 
@@ -130,6 +131,7 @@ export default function LeadDetailPage() {
             <p className="text-sm text-[var(--text-secondary)]">{lead.position ? `${lead.position} · ` : ''}{lead.companyName || lead.account?.name || 'Sin empresa'}</p>
           </div>
           <Badge variant="default">{lead.status}</Badge>
+          {lead.subPhase && <Badge variant="info">{lead.subPhase.name}</Badge>}
           <Badge variant="default">{sourceLabel}</Badge>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium">
             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
@@ -183,6 +185,16 @@ export default function LeadDetailPage() {
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Empresa vinculada</p>
                   <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.account?.name || lead.companyName || '—'}</p>
                   {lead.position && <p className="text-xs text-[var(--text-secondary)]">{lead.position}</p>}
+                </div>
+                {lead.referredByLead && (
+                  <div className="p-4 rounded-xl bg-[var(--bg)]">
+                    <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Referido por</p>
+                    <p className="mt-1 text-sm font-medium text-[var(--text)]">{lead.referredByLead.name}</p>
+                  </div>
+                )}
+                <div className="p-4 rounded-xl bg-[var(--bg)] md:col-span-2">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">Tags</p>
+                  <TagList entity="lead" entityId={lead.id} />
                 </div>
                 <div className="p-4 rounded-xl bg-[var(--bg)]">
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Estado de cliente</p>
@@ -273,6 +285,7 @@ export default function LeadDetailPage() {
           )}
 
           {activeTab === 'files' && <FileAttachments entity="lead" entityId={lead.id} />}
+          {activeTab === 'documents' && <DocumentCenter entity="lead" entityId={lead.id} />}
 
           {activeTab === 'playbooks' && <PlaybookRunsList leadId={lead.id} />}
         </div>

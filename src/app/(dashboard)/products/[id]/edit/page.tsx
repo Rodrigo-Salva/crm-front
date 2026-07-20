@@ -11,15 +11,20 @@ export default function EditProductPage() {
   const router = useRouter();
   const id = params.id as string;
   const [product, setProduct] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', price: 0, unit: 'unit', category: '', sku: '' });
+  const [form, setForm] = useState({ name: '', description: '', price: 0, unit: 'unit', categoryId: '', sku: '' });
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get<Product>(`/products/${id}`);
+      const [res, cats] = await Promise.all([
+        api.get<Product>(`/products/${id}`),
+        api.get<any>('/product-categories')
+      ]);
       setProduct(res);
-      setForm({ name: res.name, description: res.description || '', price: res.price, unit: res.unit || 'unit', category: res.category || '', sku: res.sku || '' });
+      setCategories(Array.isArray(cats) ? cats : []);
+      setForm({ name: res.name, description: res.description || '', price: res.price, unit: res.unit || 'unit', categoryId: res.categoryId || '', sku: res.sku || '' });
     } catch {} finally { setLoading(false); }
   }, [id]);
 
@@ -47,7 +52,13 @@ export default function EditProductPage() {
             <Input label="SKU" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
             <Input label="Precio" type="number" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })} />
             <Input label="Unidad" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
-            <Input label="Categoría" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
+            <div>
+              <label className="block text-sm font-medium mb-1">Categoría</label>
+              <select className="block w-full rounded-lg border border-[var(--border)] px-3 py-2 text-sm" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}>
+                <option value="">Sin categoría</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>

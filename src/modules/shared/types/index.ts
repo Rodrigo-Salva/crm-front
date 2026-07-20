@@ -52,6 +52,7 @@ export interface Company {
   website?: string;
   phone?: string;
   address?: string;
+  ruc?: string;
   ownerId: string;
   customFields?: Record<string, any>;
   _count?: { leads: number };
@@ -91,6 +92,7 @@ export interface Campaign {
   totalRecipients: number;
   sentCount: number;
   openedCount: number;
+  clickedCount: number;
   scheduledAt?: string;
   sentAt?: string;
   createdAt: string;
@@ -110,6 +112,13 @@ export interface CampaignRecipient {
   lead?: { id: string; name: string; email: string };
 }
 
+export interface ProductCategory {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -117,9 +126,30 @@ export interface Product {
   price: number;
   currency: Currency;
   unit: string;
-  category?: string;
+  categoryId?: string;
+  category?: { id: string; name: string };
   sku?: string;
+  type?: 'physical' | 'digital' | 'service';
+  billingType?: 'one_time' | 'recurring';
+  stock?: number;
+  trackStock?: boolean;
   active: boolean;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled';
+  leadId?: string;
+  tenantId: string;
+  ownerId: string;
+  startDate?: string;
+  endDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  lead?: { id: string; name: string };
+  owner?: { id: string; name: string };
 }
 
 export interface Quote {
@@ -132,6 +162,8 @@ export interface Quote {
   discountTotal: number;
   taxTotal: number;
   grandTotal: number;
+  requiresSignature?: boolean;
+  signatureDate?: string;
   notes?: string;
   version: number;
   discountPercent?: number;
@@ -146,6 +178,7 @@ export interface QuoteLineItem {
   quoteId: string;
   productId?: string;
   description: string;
+  section?: string;
   quantity: number;
   unitPrice: number;
   currency: Currency;
@@ -297,6 +330,11 @@ export interface Lead {
   utmCampaign?: string;
   utmTerm?: string;
   utmContent?: string;
+  subPhaseId?: string;
+  subPhase?: { id: string; name: string };
+  referredByLeadId?: string;
+  referredByLead?: { id: string; name: string };
+  isPartner?: boolean;
   ownerId: string;
   tenantId: string;
   owner?: { id: string; name: string };

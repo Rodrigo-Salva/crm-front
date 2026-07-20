@@ -25,6 +25,7 @@ export function NodeConfigModal({ open, node, onClose, onSave, onDelete, saving 
   const [modalities, setModalities] = useState<any[]>([]);
   const [stages, setStages] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -32,6 +33,7 @@ export function NodeConfigModal({ open, node, onClose, onSave, onDelete, saving 
     api.get<any[]>('/modalities').then((res) => setModalities(Array.isArray(res) ? res : [])).catch(() => {});
     api.get<any[]>('/pipeline-stages').then((res) => setStages(Array.isArray(res) ? res : [])).catch(() => {});
     api.get<any[]>('/users').then((res) => setUsers(Array.isArray(res) ? res : [])).catch(() => {});
+    api.get<any[]>('/teams').then((res) => setTeams(Array.isArray(res) ? res : [])).catch(() => {});
   }, [open]);
 
   useEffect(() => {
@@ -217,8 +219,44 @@ export function NodeConfigModal({ open, node, onClose, onSave, onDelete, saving 
               </select>
             </div>
 
-            {actionType === 'assign_round_robin' && (
-              <Input label="Rol" placeholder="Ej: seller" value={actionConfig.role || ''} onChange={(e) => setActionConfig({ ...actionConfig, role: e.target.value })} />
+            {(actionType === 'assign_round_robin' || actionType === 'assign_workload') && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text)] mb-1">Repartir entre</label>
+                  <select
+                    value={actionConfig.teamId ? 'team' : 'role'}
+                    onChange={(e) => {
+                      if (e.target.value === 'role') {
+                        const { teamId, ...rest } = actionConfig;
+                        setActionConfig({ ...rest, role: rest.role || 'seller' });
+                      } else {
+                        const { role, ...rest } = actionConfig;
+                        setActionConfig({ ...rest, teamId: teams[0]?.id || '' });
+                      }
+                    }}
+                    className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--text)]"
+                  >
+                    <option value="role">Rol</option>
+                    <option value="team">Equipo</option>
+                  </select>
+                </div>
+
+                {actionConfig.teamId ? (
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--text)] mb-1">Equipo</label>
+                    <select
+                      value={actionConfig.teamId || ''}
+                      onChange={(e) => setActionConfig({ ...actionConfig, teamId: e.target.value })}
+                      className="w-full h-10 px-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-sm text-[var(--text)]"
+                    >
+                      <option value="">Selecciona equipo...</option>
+                      {teams.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.members?.length ?? 0})</option>)}
+                    </select>
+                  </div>
+                ) : (
+                  <Input label="Rol" placeholder="Ej: seller" value={actionConfig.role || ''} onChange={(e) => setActionConfig({ ...actionConfig, role: e.target.value })} />
+                )}
+              </div>
             )}
 
             {actionType === 'create_task' && (

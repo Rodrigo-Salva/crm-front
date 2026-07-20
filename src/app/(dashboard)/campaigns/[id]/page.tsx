@@ -35,6 +35,12 @@ export default function CampaignDetailPage() {
 
   useEffect(() => { load() }, [load]);
 
+  useEffect(() => {
+    if (campaign?.status !== 'sending') return;
+    const interval = setInterval(load, 3000);
+    return () => clearInterval(interval);
+  }, [campaign?.status, load]);
+
   if (loading) return <Loading />;
   if (!campaign) return (
     <div className="text-center py-20">
@@ -64,7 +70,7 @@ export default function CampaignDetailPage() {
         <Button variant="secondary" onClick={() => router.push(`/campaigns/${id}/edit`)}>Editar</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-4 gap-5">
         <Card>
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Destinatarios</p>
           <p className="mt-1 text-3xl font-bold text-[var(--text)]">{totalRecipients}</p>
@@ -76,6 +82,10 @@ export default function CampaignDetailPage() {
         <Card>
           <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Abiertos</p>
           <p className="mt-1 text-3xl font-bold text-[var(--text)]">{campaign.openedCount}</p>
+        </Card>
+        <Card>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Clics</p>
+          <p className="mt-1 text-3xl font-bold text-[var(--text)]">{campaign.clickedCount ?? 0}</p>
         </Card>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Button, PageHeader, Loading, Badge, Card, Modal, Input, SearchSelect } from '@/modules/shared';
+import { Button, PageHeader, Loading, Badge, Card, Modal, Input, SearchSelect, TagList } from '@/modules/shared';
 import { Tabs } from '@/modules/shared/components/ui/tab';
 import { api } from '@/modules/shared/services/api';
 import { Ticket } from '@/modules/shared/types';
@@ -189,6 +189,10 @@ export default function TicketDetailPage() {
                   <p className="mt-1 text-sm font-medium text-[var(--text)]">
                     {new Date(ticket.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
+                </div>
+                <div className="p-4 rounded-xl bg-[var(--bg)] md:col-span-2 lg:col-span-3">
+                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold mb-2">Tags</p>
+                  <TagList entity="ticket" entityId={ticket.id} />
                 </div>
               </div>
 
