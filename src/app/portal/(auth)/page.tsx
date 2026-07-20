@@ -1,129 +1,126 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Loading, Badge } from '@/modules/shared';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
-async function apiGet(path: string) {
-  const token = localStorage.getItem('portal_token');
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error('Unauthorized');
-  return res.json();
-}
+import { api } from '@/modules/shared/services/api';
+import { formatCurrency } from '@/modules/shared/utils/format';
 
 export default function PortalDashboardPage() {
-  const [contact, setContact] = useState<any>(null);
-  const [tickets, setTickets] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contact, setContact] = useState<any>(null);
+
+  const loadData = useCallback(async () => {
+    try {
+      const stored = localStorage.getItem('portal_contact');
+      if (stored) {
+        setContact(JSON.parse(stored));
+      }
+
+      // Fetch pending quotes
+      const resQuotes = await api.get<any>('/quotes');
+      setQuotes(Array.isArray(resQuotes) ? resQuotes.slice(0, 5) : []);
+
+      // Fetch pending invoices
+      const resInvoices = await api.get<any>('/invoices');
+      setInvoices(Array.isArray(resInvoices) ? resInvoices.slice(0, 5) : []);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem('portal_contact');
-    if (stored) setContact(JSON.parse(stored));
-    Promise.all([
-      apiGet('/tickets').catch(() => []),
-      apiGet('/quotes').catch(() => []),
-    ]).then(([t, q]) => {
-      setTickets(Array.isArray(t) ? t : []);
-      setQuotes(Array.isArray(q) ? q : []);
-    }).finally(() => setLoading(false));
-  }, []);
+    loadData();
+  }, [loadData]);
 
   if (loading) return <Loading />;
 
-  const openTickets = tickets.filter((t: any) => t.status === 'open' || t.status === 'in_progress');
-  const openQuotes = quotes.filter((q: any) => q.status === 'draft' || q.status === 'sent');
+  const pendingInvoices = invoices.filter(i => i.status === 'pending' || i.status === 'overdue');
+  const totalDebt = pendingInvoices.reduce((acc, i) => acc + i.amount, 0);
 
   return (
     <div className="animate-fade-in space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--text)]">
-          Bienvenido{contact?.name ? `, ${contact.name}` : ''}
-        </h1>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">Resumen de tu actividad</p>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[var(--text)] mb-2">¡Hola, {contact?.name?.split(' ')[0] || 'Cliente'}!</h1>
+        <p className="text-[var(--text-secondary)]">Bienvenido a tu portal. Aquí puedes consultar el estado de tus proyectos, facturas y contratos.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-[var(--text)]">{tickets.length}</p>
-            <p className="text-xs text-[var(--text-secondary)]">Total tickets</p>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="p-6 border-t-4 border-t-blue-500">
+          <p className="text-sm font-semibold text-[var(--text-muted)] uppercase">Proyectos Activos</p>
+          <p className="text-4xl font-bold mt-2 text-[var(--text)]">1</p>
         </Card>
-        <Card className="p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-[var(--text)]">{openTickets.length}</p>
-            <p className="text-xs text-[var(--text-secondary)]">Tickets abiertos</p>
-          </div>
+        
+        <Card className="p-6 border-t-4 border-t-green-500">
+          <p className="text-sm font-semibold text-[var(--text-muted)] uppercase">Cotizaciones Pendientes</p>
+          <p className="text-4xl font-bold mt-2 text-[var(--text)]">{quotes.filter(q => q.status === 'sent').length}</p>
         </Card>
-        <Card className="p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-            <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-[var(--text)]">{openQuotes.length}</p>
-            <p className="text-xs text-[var(--text-secondary)]">Cotizaciones pendientes</p>
-          </div>
+
+        <Card className={`p-6 border-t-4 ${totalDebt > 0 ? 'border-t-red-500' : 'border-t-[var(--border)]'}`}>
+          <p className="text-sm font-semibold text-[var(--text-muted)] uppercase">Saldo Pendiente</p>
+          <p className={`text-4xl font-bold mt-2 ${totalDebt > 0 ? 'text-red-500' : 'text-[var(--text)]'}`}>
+            {formatCurrency(totalDebt, 'MXN')}
+          </p>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[var(--text)]">Tickets recientes</h3>
-            <Link href="/portal/tickets" className="text-xs text-[var(--primary)] hover:underline">Ver todos</Link>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <Card className="p-0 overflow-hidden">
+          <div className="p-4 bg-[var(--bg)] border-b border-[var(--border)]">
+            <h3 className="font-bold text-[var(--text)]">Tus últimas facturas</h3>
           </div>
-          {tickets.length === 0 ? (
-            <p className="text-sm text-[var(--text-secondary)] text-center py-6">Sin tickets</p>
-          ) : (
-            <div className="space-y-2">
-              {tickets.slice(0, 5).map((t: any) => (
-                <Link key={t.id} href={`/portal/tickets/${t.id}`} className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--sidebar-hover)] border border-[var(--border)] transition-colors">
-                  <div>
-                    <span className="text-xs font-mono text-[var(--primary)]">#{t.number}</span>
-                    <p className="text-sm font-medium text-[var(--text)]">{t.subject}</p>
-                  </div>
-                  <Badge variant={t.status === 'open' ? 'success' : t.status === 'in_progress' ? 'warning' : t.status === 'resolved' ? 'primary' : 'default'}>
-                    {t.status === 'open' ? 'Abierto' : t.status === 'in_progress' ? 'En Progreso' : t.status === 'resolved' ? 'Resuelto' : 'Cerrado'}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="p-4">
+            {invoices.length === 0 ? (
+              <p className="text-[var(--text-secondary)] text-sm text-center py-4">No tienes facturas recientes.</p>
+            ) : (
+              <ul className="space-y-4">
+                {invoices.map(inv => (
+                  <li key={inv.id} className="flex justify-between items-center p-3 hover:bg-[var(--bg)] rounded-lg border border-[var(--border)]">
+                    <div>
+                      <p className="font-semibold text-[var(--text)]">{inv.number}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">Vence: {new Date(inv.dueDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-[var(--text)]">{formatCurrency(inv.amount, inv.currency)}</p>
+                      <Badge variant={inv.status === 'paid' ? 'success' : inv.status === 'overdue' ? 'danger' : 'warning'}>
+                        {inv.status}
+                      </Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </Card>
 
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-[var(--text)]">Cotizaciones recientes</h3>
-            <Link href="/portal/quotes" className="text-xs text-[var(--primary)] hover:underline">Ver todas</Link>
+        <Card className="p-0 overflow-hidden">
+          <div className="p-4 bg-[var(--bg)] border-b border-[var(--border)]">
+            <h3 className="font-bold text-[var(--text)]">Cotizaciones por revisar</h3>
           </div>
-          {quotes.length === 0 ? (
-            <p className="text-sm text-[var(--text-secondary)] text-center py-6">Sin cotizaciones</p>
-          ) : (
-            <div className="space-y-2">
-              {quotes.slice(0, 5).map((q: any) => (
-                <Link key={q.id} href={`/portal/quotes/${q.id}`} className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--sidebar-hover)] border border-[var(--border)] transition-colors">
-                  <div>
-                    <span className="text-xs font-mono text-[var(--text)]">{q.number}</span>
-                    <p className="text-sm font-medium text-[var(--text)]">${q.grandTotal?.toLocaleString()}</p>
-                  </div>
-                  <Badge variant={q.status === 'approved' ? 'success' : q.status === 'rejected' ? 'danger' : q.status === 'sent' ? 'primary' : 'default'}>
-                    {q.status === 'draft' ? 'Borrador' : q.status === 'sent' ? 'Enviada' : q.status === 'approved' ? 'Aprobada' : q.status === 'rejected' ? 'Rechazada' : q.status}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="p-4">
+            {quotes.length === 0 ? (
+              <p className="text-[var(--text-secondary)] text-sm text-center py-4">No tienes cotizaciones pendientes.</p>
+            ) : (
+              <ul className="space-y-4">
+                {quotes.map(q => (
+                  <li key={q.id} className="flex justify-between items-center p-3 hover:bg-[var(--bg)] rounded-lg border border-[var(--border)]">
+                    <div>
+                      <p className="font-semibold text-[var(--text)]">{q.number}</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{new Date(q.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <p className="font-bold text-[var(--text)]">{formatCurrency(q.grandTotal, q.currency)}</p>
+                      <Badge variant="primary">Ver detalle</Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </Card>
       </div>
     </div>

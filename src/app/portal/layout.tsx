@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 
-const navLinks = [
+const baseNavLinks = [
   { href: '/portal', label: 'Dashboard' },
   { href: '/portal/tickets', label: 'Tickets' },
   { href: '/portal/quotes', label: 'Cotizaciones' },
@@ -19,6 +19,11 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     setMounted(true);
+    // Si estamos en login o register, no bloqueamos el renderizado de los hijos
+    if (pathname === '/portal/login' || pathname === '/portal/register') {
+      return;
+    }
+    
     const token = localStorage.getItem('portal_token');
     const stored = localStorage.getItem('portal_contact');
     if (!token || !stored) {
@@ -26,7 +31,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       return;
     }
     setContact(JSON.parse(stored));
-  }, [router]);
+  }, [router, pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('portal_token');
@@ -34,7 +39,14 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     router.push('/portal/login');
   };
 
-  if (!mounted || !contact) return null;
+  if (!mounted) return null;
+
+  // Si estamos en login o register, renderizamos children directamente sin el layout del portal
+  if (pathname === '/portal/login' || pathname === '/portal/register') {
+    return <>{children}</>;
+  }
+
+  if (!contact) return null;
 
   return (
     <div className="min-h-screen bg-[var(--bg)]">
@@ -49,7 +61,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             <h1 className="text-base font-bold text-[var(--text)]">Portal del Cliente</h1>
           </Link>
           <nav className="flex gap-1">
-            {navLinks.map((link) => (
+            {(contact.isPartner ? [...baseNavLinks, { href: '/portal/referrals', label: 'Mis Referidos' }] : baseNavLinks).map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
